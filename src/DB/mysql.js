@@ -91,11 +91,21 @@ function query(tabla,consulta){//function para eliminar un dato de la tabla
     })
 }
 
+function customQuery(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    conexion.query(sql, params, (error, result) => {
+      return error ? reject(error) : resolve(result)
+    })
+  })
+}
+
+
 module.exports = {
     todos,
     uno,
     agregar,
     eliminar,
     query,
-    editar
+    editar,
+    customQuery
 }

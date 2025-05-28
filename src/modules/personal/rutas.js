@@ -7,7 +7,8 @@ const router = express.Router()
 //Rutas urls
 router.get('/',todos)
 router.get('/:id',uno)
-router.post('/',agregar)
+router.post('/', agregar);
+router.put('/:id', editar);
 router.put('/',eliminar)
 
 
@@ -34,20 +35,23 @@ async function uno (req,res,next){
 
 }
 
-async function agregar (req,res,next){
-    try{
-        const items = await controlador.agregar(req.body)
-        if(req.body.id == 0){
-            mensaje = 'item guardado con exito'
-        }else{
-            mensaje = 'item actualizado con exito'
-        }
-            respuesta.success(req,res,mensaje,201)
-    }
-    catch(err){
-        next(err)
-    }
+async function agregar(req, res, next) {
+  try {
+    const resultado = await controlador.agregar(req.body);
+    respuesta.success(req, res, 'Item guardado con éxito', 201);
+  } catch (err) {
+    next(err);
+  }
+}
 
+async function editar(req, res, next) {
+  try {
+    const id = req.params.id;
+    const resultado = await controlador.editar(id, req.body);
+    respuesta.success(req, res, 'Item actualizado con éxito', 200);
+  } catch (err) {
+    next(err);
+  }
 }
 
 async function eliminar (req,res,next){

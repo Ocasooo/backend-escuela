@@ -23,11 +23,24 @@ module.exports= function (dbinyectada){
     function eliminar(body){
         return db.eliminar(tabla,body)
     }
+    
+    function examenConInfo() {
+    const query = `
+        SELECT e.*, a.nombre AS nombre_alumno, c.nombre AS nombre_curso
+        FROM examen e
+        JOIN alumno a ON e.alumno_id = a.id
+        JOIN curso c ON e.curso_id = c.id
+    `
+    return db.customQuery(query)
+    }
+
+
 
     return {
         todos,
         uno,
         agregar,
-        eliminar
+        eliminar,
+        examenConInfo
     }
 }

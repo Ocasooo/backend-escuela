@@ -18,18 +18,21 @@ module.exports= function (dbinyectada){
     }
 
     async function agregar(body) {
-        // Verificamos si hay campo "Contrasena"
-        if (body.Contrasena) {
-            const saltRounds = 5;
-            try {
-                const hashedPassword = await bcrypt.hash(body.Contrasena, saltRounds);
-                body.Contrasena = hashedPassword;
-            } catch (error) {
-                throw new Error('Error al encriptar la contraseña');
-            }
-        }
-
+    if (body.contrasena) {
+        const saltRounds = 5;
+        const hashedPassword = await bcrypt.hash(body.contrasena, saltRounds);
+        body.contrasena = hashedPassword;
+    }
         return db.agregar(tabla, body);
+    }
+
+    async function editar(id, body) {
+    if (body.contrasena) {
+        const saltRounds = 5;
+        const hashedPassword = await bcrypt.hash(body.contrasena, saltRounds);
+        body.contrasena = hashedPassword;
+    }
+        return db.editar(tabla, id, body);
     }
 
     function eliminar(body){
@@ -40,6 +43,7 @@ module.exports= function (dbinyectada){
         todos,
         uno,
         agregar,
-        eliminar
+        eliminar,
+        editar
     }
 }

@@ -1,6 +1,8 @@
-//Constructor al que inyectar la bd
-
 const db = require('../../DB/mysql.js')
-const ctrl = require('./controlador.js')
+const controladorCRUD = require('./controladorCRUD.js')
+const relaciones = require('./cursoAsignacion.js')
 
-module.exports= ctrl(db)
+module.exports = {
+  crud: controladorCRUD(db),
+  relaciones: relaciones(db)
+}
