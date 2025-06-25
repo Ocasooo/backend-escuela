@@ -11,15 +11,18 @@ const mensaje = require('./modules/mensaje/rutas.js') //Ruta de la tabla usuario
 const material = require('./modules/material/rutas.js') //Ruta de la tabla usuarios
 const unidades = require('./modules/unidades/rutas.js') //Ruta de la tabla usuarios
 const login = require('./modules/login/rutas.js') //Ruta de la tabla usuarios
+const verificarToken = require('./modules/login/middleware');
+
 
 const app = express()
 const error =require('./red/errors.js')
 
 //Middleware
-app.use(morgan('dev')) //Nos permite ver facilmente en consola las consultas que se van realizando
 app.use(cors({
   origin: 'http://localhost:4321'
 }));
+app.use(verificarToken);
+app.use(morgan('dev')) //Nos permite ver facilmente en consola las consultas que se van realizando
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
 

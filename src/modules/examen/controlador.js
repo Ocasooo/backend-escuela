@@ -34,8 +34,6 @@ module.exports= function (dbinyectada){
     return db.customQuery(query)
     }
 
-
-
     return {
         todos,
         uno,

@@ -83,7 +83,7 @@ function eliminar(tabla,data){//function para eliminar un dato de la tabla
     })
 }
 
-function query(tabla,consulta){//function para eliminar un dato de la tabla
+function query(tabla,consulta){
     return new Promise((resolve,reject) =>{
         conexion.query(`SELECT * FROM ${tabla} WHERE ?`,consulta, (error,result) =>{
             return error ? reject(error) : resolve(result[0])

@@ -45,12 +45,57 @@ module.exports = function (dbinyectada) {
     )
   }
 
+  function obtenerAlumnosConCurso() {
+    return db.customQuery(`
+      SELECT 
+        a.dni,
+        a.nombre, 
+        a.apellido, 
+        GROUP_CONCAT(c.nombre SEPARATOR ', ') AS cursos
+      FROM alumno a
+      JOIN curso_has_alumno ca ON a.id = ca.alumno_id
+      JOIN curso c ON ca.curso_id = c.id
+      GROUP BY a.id
+    `)
+  }
+
+  function alumnosPorCursoConEstado(idCurso) {
+    return db.customQuery(`
+      SELECT 
+        a.dni,
+        a.nombre,
+        a.apellido,
+        cha.estado_terminacion
+      FROM curso_has_alumno cha
+      JOIN alumno a ON a.id = cha.alumno_id
+      WHERE cha.curso_id = ?
+    `, [idCurso])
+  }
+
+  function resumenCursos() {
+  return db.customQuery(`
+    SELECT 
+      c.id,
+      c.nombre,
+      c.descripcion,
+      COUNT(cha.alumno_id) AS inscriptos,
+      SUM(cha.estado_terminacion = 'abandonado') AS abandonos,
+      SUM(cha.estado_terminacion = 'aprobado') AS egresados
+    FROM curso c
+    LEFT JOIN curso_has_alumno cha ON c.id = cha.curso_id
+    GROUP BY c.id
+  `)
+  }
+
   return {
     asignarAlumno,
     quitarAlumno,
     cursosPorAlumno,
     asignarPersonal,
     quitarPersonal,
-    cursosPorPersonal
+    cursosPorPersonal,
+    obtenerAlumnosConCurso,
+    alumnosPorCursoConEstado,
+    resumenCursos
   }
 }

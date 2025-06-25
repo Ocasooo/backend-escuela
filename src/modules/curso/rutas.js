@@ -4,22 +4,26 @@ const { crud, relaciones } = require('./index.js') // destructuring
 
 const router = express.Router()
 
+// rutas de relaciones alumno
+router.post('/asignar-alumno', asignarAlumno)
+router.delete('/quitar-alumno', quitarAlumno)
+router.get('/alumno/:id/cursos', cursosPorAlumno)
+router.get('/:id/alumnos', alumnosPorCursoConEstado)
+router.get('/resumen', resumenCursosTabla)
+
+
+// rutas de relaciones personal
+router.post('/asignar-personal', asignarPersonal)
+router.delete('/quitar-personal', quitarPersonal)
+router.get('/personal/:id/cursos', cursosPorPersonal)
+router.get('/alumnos-con-curso', alumnosConCurso)
+
 // rutas de CRUD
 router.get('/', todos)
 router.get('/:id', uno)
 router.post('/', agregar)
 router.put('/:id', editar)
 router.put('/', eliminar)
-
-// rutas de relaciones alumno
-router.post('/asignar-alumno', asignarAlumno)
-router.delete('/quitar-alumno', quitarAlumno)
-router.get('/alumno/:id/cursos', cursosPorAlumno)
-
-// rutas de relaciones personal
-router.post('/asignar-personal', asignarPersonal)
-router.delete('/quitar-personal', quitarPersonal)
-router.get('/personal/:id/cursos', cursosPorPersonal)
 
 // funciones CRUD
 async function todos(req, res, next) {
@@ -125,5 +129,33 @@ async function cursosPorPersonal(req, res, next) {
     next(err)
   }
 }
+
+async function alumnosConCurso(req, res, next) {
+  try {
+    const result = await relaciones.obtenerAlumnosConCurso()
+    respuesta.success(req, res, result, 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
+async function alumnosPorCursoConEstado(req, res, next) {
+  try {
+    const result = await relaciones.alumnosPorCursoConEstado(req.params.id)
+    respuesta.success(req, res, result, 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
+async function resumenCursosTabla(req, res, next) {
+  try {
+    const result = await relaciones.resumenCursos()
+    respuesta.success(req, res, result, 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
 
 module.exports = router
