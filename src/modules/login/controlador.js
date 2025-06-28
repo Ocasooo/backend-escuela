@@ -1,58 +1,53 @@
-const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
+const db = require('../../DB/mysql.js')
 const SECRET = process.env.JWT_SECRET || 'claveSuperSecreta'
 
-module.exports = function (dbinyectada) {
-  let db = dbinyectada
-  if (!db) {
-    db = require('../../DB/mysql.js')
-  }
+module.exports = function () {
+  async function login(datos) {
+    const { correo, contrasena } = datos
 
-  async function login({ correo, contrasena }) {
-    // Buscar en alumno
-    let user = await db.query('personal', { correo: correo })
-    let tipo = 'personal'
+    // Buscar primero en tabla personal
+    let rows = await db.customQuery(`SELECT * FROM personal WHERE correo = ?`, [correo])
+    let usuario = rows[0]
+    let tabla = 'personal'
 
-    // Si no está en alumno, buscar en personal
-    if (!user) {
-      user = await db.query('alumno', { correo: correo })
-      tipo = 'alumno'
+    if (!usuario) {
+      // Si no existe en personal, buscar en alumno
+      rows = await db.customQuery(`SELECT * FROM alumno WHERE correo = ?`, [correo])
+      usuario = rows[0]
+      tabla = 'alumno'
     }
 
-    if (!user || !user.contrasena) {
-      throw new Error('Correo o contraseña incorrectos')
+    if (!usuario) {
+      throw new Error('Usuario no encontrado')
     }
 
-    // Comparar con bcrypt
-    await bcrypt.compare(contrasena, user.contrasena)
-      .then(res => {
-        // Crear token
-        const payload = {
-          tipo,
-          correo: user.correo,
-          id: user.id,
-          nombre: user.nombre,
-          apellido: user.apellido,
-          rol: user.ocupacion
-        }
-      })
-      .catch(err =>{
-        throw new Error(err)
-      })
+    // Verificar contraseña
+    const match = await bcrypt.compare(contrasena, usuario.contrasena)
+    if (!match) {
+      throw new Error('Contraseña incorrecta')
+    }
+
+    // Determinar ocupacion correctamente
+    let ocupacion = ''
+    if (tabla === 'personal') {
+      ocupacion = usuario.ocupacion ? usuario.ocupacion.toLowerCase() : 'personal'
+    } else {
+      ocupacion = 'alumno'
+    }
 
     // Crear token
     const payload = {
-      tipo,
-      correo: user.correo,
-      id: user.id,
-      nombre: user.nombre,
-      apellido: user.apellido
+      id: usuario.id,
+      correo: usuario.correo,
+      nombre: usuario.nombre,
+      apellido: usuario.apellido,
+      ocupacion // ahora queda bien incluido
     }
-
-    const token = jwt.sign(payload, SECRET, { expiresIn: '1h' })
+    const token = jwt.sign(payload, SECRET, { expiresIn: '24h' })
 
     return {
-      mensaje: 'Login exitoso',
       token,
       usuario: payload
     }

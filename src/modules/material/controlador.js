@@ -1,33 +1,61 @@
-const tabla = 'material' //APUNTA A LA TABLA
+const path = require('path')
+const fs = require('fs')
+const multer = require('multer')
+const tabla = 'material'
 
-module.exports= function (dbinyectada){
-    
-    let db = dbinyectada
+const storage = multer.memoryStorage()
+const upload = multer({ storage })
 
-    if(!db){ //Si llega la db, puedo sacarla directamente de aqui
-        db = require('../../DB/mysql.js')
+module.exports = function (dbinyectada) {
+  let db = dbinyectada
+  if (!db) db = require('../../DB/mysql.js')
+
+  function todos() {
+    return db.customQuery(
+      `SELECT m.*, c.nombre AS curso_nombre, msg.titulo AS mensaje_titulo
+       FROM material m
+       LEFT JOIN curso c ON m.curso_id = c.id
+       LEFT JOIN mensaje msg ON m.mensaje_id = msg.id`
+    )
+  }
+
+  function uno(id) {
+    return db.customQuery(
+      `SELECT m.*, c.nombre AS curso_nombre, msg.titulo AS mensaje_titulo
+       FROM material m
+       LEFT JOIN curso c ON m.curso_id = c.id
+       LEFT JOIN mensaje msg ON m.mensaje_id = msg.id
+       WHERE m.id = ?`, [id]
+    )
+  }
+
+  function agregarArchivo(file, curso_id, mensaje_id) {
+    if (!file || !file.buffer || !file.originalname) {
+      throw new Error('Archivo inválido')
     }
 
-    function todos(){
-        return db.todos(tabla)
-    }
+    const nombreArchivo = Date.now() + '-' + file.originalname
+    const ruta = path.join('uploads', nombreArchivo)
+    const rutaCompleta = path.join(__dirname, '../../', ruta)
 
-    function uno(id){
-        return db.uno(tabla,id)
-    }
+    fs.writeFileSync(rutaCompleta, file.buffer)
 
-    function agregar(body){
-        return db.agregar(tabla,body)
-    }
+    return db.customQuery(
+      `INSERT INTO material (observacion, archivo_scan, fecha_subida, curso_id, mensaje_id)
+       VALUES (?, ?, NOW(), ?, ?)`,
+      [file.originalname, ruta, curso_id, mensaje_id || null]
+    )
+  }
 
-    function eliminar(body){
-        return db.eliminar(tabla,body)
-    }
+  function eliminar(data) {
+    return db.eliminar(tabla, data)
+  }
 
-    return {
-        todos,
-        uno,
-        agregar,
-        eliminar
-    }
+  return {
+    todos,
+    uno,
+    agregarArchivo,
+    eliminar,
+    upload
+  }
 }

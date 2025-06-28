@@ -29,7 +29,7 @@ router.get('/token-dev', (req, res) => {
     correo: 'franco-makula@outlook.com.ar',
     nombre: 'Franco',
     apellido: 'Makula',
-    tipo: 'superadmin'
+    ocupacion: 'Administrador'
   }
 
   const token = jwt.sign(payload, SECRET, { expiresIn: '100y' }) // token eterno para dev

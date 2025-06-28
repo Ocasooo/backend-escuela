@@ -11,8 +11,9 @@ const mensaje = require('./modules/mensaje/rutas.js') //Ruta de la tabla usuario
 const material = require('./modules/material/rutas.js') //Ruta de la tabla usuarios
 const unidades = require('./modules/unidades/rutas.js') //Ruta de la tabla usuarios
 const login = require('./modules/login/rutas.js') //Ruta de la tabla usuarios
-const verificarToken = require('./modules/login/middleware');
-
+const curso_html = require('./modules/curso_html/rutas.js')
+const verificarToken = require('./modules/login/middleware')
+const path = require('path')
 
 const app = express()
 const error =require('./red/errors.js')
@@ -40,6 +41,10 @@ app.use('/api/material',material)
 app.use('/api/mensaje',mensaje)
 app.use('/api/unidades',unidades)
 app.use('/api/login',login)
+app.use('/api/material',material)
+app.use('/api/curso_html',curso_html)
 app.use(error)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+
 
 module.exports = app

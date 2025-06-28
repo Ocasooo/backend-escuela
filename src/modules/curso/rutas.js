@@ -1,31 +1,33 @@
 const express = require('express')
 const respuesta = require('../../red/respuestas.js')
-const { crud, relaciones } = require('./index.js') // destructuring
+const { crud, relaciones } = require('./index.js')
 
 const router = express.Router()
 
-// rutas de relaciones alumno
+// === RUTAS DE RELACIONES ALUMNO ===
 router.post('/asignar-alumno', asignarAlumno)
 router.delete('/quitar-alumno', quitarAlumno)
 router.get('/alumno/:id/cursos', cursosPorAlumno)
 router.get('/:id/alumnos', alumnosPorCursoConEstado)
 router.get('/resumen', resumenCursosTabla)
 
-
-// rutas de relaciones personal
+// === RUTAS DE RELACIONES PERSONAL ===
 router.post('/asignar-personal', asignarPersonal)
 router.delete('/quitar-personal', quitarPersonal)
 router.get('/personal/:id/cursos', cursosPorPersonal)
 router.get('/alumnos-con-curso', alumnosConCurso)
 
-// rutas de CRUD
+// === RUTAS DE CRUD ===
 router.get('/', todos)
 router.get('/:id', uno)
 router.post('/', agregar)
 router.put('/:id', editar)
 router.put('/', eliminar)
 
-// funciones CRUD
+// === NUEVO: Detalle con validación de usuario ===
+router.get('/:id/detalle-con-usuario', detalleConUsuario)
+
+// === FUNCIONES CRUD ===
 async function todos(req, res, next) {
   try {
     const items = await crud.todos()
@@ -71,7 +73,7 @@ async function eliminar(req, res, next) {
   }
 }
 
-// funciones de relaciones
+// === FUNCIONES DE RELACIONES ===
 async function asignarAlumno(req, res, next) {
   try {
     const { id_alumno, id_curso } = req.body
@@ -156,6 +158,64 @@ async function resumenCursosTabla(req, res, next) {
     next(err)
   }
 }
+
+// === NUEVO: Detalle con validación de usuario ===
+async function detalleConUsuario(req, res, next) {
+  try {
+    const cursoId = req.params.id
+    const curso = await crud.uno(cursoId)
+    if (!curso) return respuesta.error(req, res, 'Curso no encontrado', 404)
+
+    const usuario = req.usuario
+    if (!usuario) return respuesta.error(req, res, 'Usuario no identificado', 401)
+    console.log('USUARIO:', usuario)
+
+    let puedeEditar = false
+    let tieneAcceso = false
+
+    // Convertir ocupación a minúsculas (para comparar sin problema)
+    let ocupacion = ''
+    if (usuario.ocupacion) {
+      ocupacion = usuario.ocupacion.toLowerCase().trim()
+    } else if (usuario.tipo) {
+      ocupacion = usuario.tipo.toLowerCase().trim()
+    }
+
+    console.log('OCUPACION NORMALIZADA:', ocupacion)
+
+    if (ocupacion === 'administrador') {
+      puedeEditar = true
+      tieneAcceso = true
+    } else if (ocupacion === 'profesor' || ocupacion === 'personal') {
+      const cursosAsignados = await relaciones.cursosPorPersonal(usuario.id)
+      console.log('CURSOS ASIGNADOS:', cursosAsignados)
+
+      const estaAsignado = cursosAsignados.some(c => c.id == cursoId)
+      console.log('ESTA ASIGNADO:', estaAsignado)
+
+      puedeEditar = estaAsignado
+      tieneAcceso = true // profesor puede ver siempre
+    } else if (ocupacion === 'alumno') {
+      const cursosAsignados = await relaciones.cursosPorAlumno(usuario.id)
+      const estaAsignado = cursosAsignados.some(c => c.id == cursoId)
+      puedeEditar = false
+      tieneAcceso = estaAsignado
+    }
+
+    if (!tieneAcceso) {
+      return respuesta.error(req, res, 'No autorizado', 403)
+    }
+
+    respuesta.success(req, res, {
+      ...curso,
+      puedeEditar,
+      tieneAcceso
+    }, 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
 
 
 module.exports = router
