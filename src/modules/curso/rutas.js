@@ -10,12 +10,15 @@ router.delete('/quitar-alumno', quitarAlumno)
 router.get('/alumno/:id/cursos', cursosPorAlumno)
 router.get('/:id/alumnos', alumnosPorCursoConEstado)
 router.get('/resumen', resumenCursosTabla)
+router.get('/:id/alumnos-simples', alumnosPorCurso)
+
 
 // === RUTAS DE RELACIONES PERSONAL ===
 router.post('/asignar-personal', asignarPersonal)
 router.delete('/quitar-personal', quitarPersonal)
 router.get('/personal/:id/cursos', cursosPorPersonal)
 router.get('/alumnos-con-curso', alumnosConCurso)
+router.get('/:id/profesores', profesoresPorCurso)
 
 // === RUTAS DE CRUD ===
 router.get('/', todos)
@@ -134,7 +137,7 @@ async function cursosPorPersonal(req, res, next) {
 
 async function alumnosConCurso(req, res, next) {
   try {
-    const result = await relaciones.obtenerAlumnosConCurso()
+    const result = await relaciones.resumenAlumnosConCursos()
     respuesta.success(req, res, result, 200)
   } catch (err) {
     next(err)
@@ -215,6 +218,27 @@ async function detalleConUsuario(req, res, next) {
     next(err)
   }
 }
+
+async function profesoresPorCurso(req, res, next) {
+  try {
+    const cursoId = req.params.id
+    const result = await relaciones.profesoresPorCurso(cursoId)
+    respuesta.success(req, res, result, 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
+async function alumnosPorCurso(req, res, next) {
+  try {
+    const cursoId = req.params.id
+    const result = await relaciones.alumnosPorCurso(cursoId)
+    respuesta.success(req, res, result, 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
 
 
 

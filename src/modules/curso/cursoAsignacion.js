@@ -45,7 +45,7 @@ module.exports = function (dbinyectada) {
     )
   }
 
-  function obtenerAlumnosConCurso() {
+  function resumenAlumnosConCursos() {
     return db.customQuery(`
       SELECT 
         a.dni,
@@ -87,6 +87,26 @@ module.exports = function (dbinyectada) {
   `)
   }
 
+  function profesoresPorCurso(idCurso) {
+    return db.customQuery(`
+      SELECT p.id, p.nombre, p.apellido, p.ocupacion
+      FROM curso_has_personal cp
+      JOIN personal p ON cp.personal_id = p.id
+      WHERE cp.curso_id = ?
+    `, [idCurso])
+  }
+
+
+  function alumnosPorCurso(idCurso) {
+    return db.customQuery(`
+      SELECT a.id, a.nombre, a.apellido, a.dni
+      FROM curso_has_alumno ca
+      JOIN alumno a ON ca.alumno_id = a.id
+      WHERE ca.curso_id = ?
+    `, [idCurso])
+  }
+
+
   return {
     asignarAlumno,
     quitarAlumno,
@@ -94,8 +114,10 @@ module.exports = function (dbinyectada) {
     asignarPersonal,
     quitarPersonal,
     cursosPorPersonal,
-    obtenerAlumnosConCurso,
+    resumenAlumnosConCursos,
     alumnosPorCursoConEstado,
-    resumenCursos
+    resumenCursos,
+    profesoresPorCurso,
+    alumnosPorCurso
   }
 }

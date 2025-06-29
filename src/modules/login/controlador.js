@@ -43,7 +43,7 @@ module.exports = function () {
       correo: usuario.correo,
       nombre: usuario.nombre,
       apellido: usuario.apellido,
-      ocupacion // ahora queda bien incluido
+      ocupacion
     }
     const token = jwt.sign(payload, SECRET, { expiresIn: '24h' })
 

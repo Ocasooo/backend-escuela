@@ -44,7 +44,7 @@ app.use('/api/login',login)
 app.use('/api/material',material)
 app.use('/api/curso_html',curso_html)
 app.use(error)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+app.use('/uploads', express.static(path.join(__dirname, '/uploads')))
 
 
 module.exports = app

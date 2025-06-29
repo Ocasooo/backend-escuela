@@ -5,10 +5,11 @@ function verificarToken(req, res, next) {
   // ✅ Estas rutas NO necesitan token
   const rutasPublicas = [
     '/api/login',
-    '/api/login/token-dev'
+    '/api/login/token-dev',
+    '/api/material/descargar'
   ]
 
-  if (rutasPublicas.includes(req.originalUrl)) {
+  if (rutasPublicas.some(ruta => req.originalUrl.startsWith(ruta)))  {
     return next()
   }
 
