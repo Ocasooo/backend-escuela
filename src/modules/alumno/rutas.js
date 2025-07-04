@@ -1,11 +1,14 @@
 const express = require('express')
 const respuesta = require('../../red/respuestas.js')//importamos las repuestas
 const controlador = require('./index.js')
+const multer = require('multer')
+const upload = multer({ storage: multer.memoryStorage() })
 
 const router = express.Router()
 
 //Rutas urls
 router.get('/', todos);
+router.post('/subir-imagen', upload.single('imagen'), subirImagen)
 router.get('/:id', uno);
 router.post('/', agregar);
 router.put('/:id', editar);
@@ -22,6 +25,18 @@ async function todos (req,res,next){
         next(err)
     }
     
+}
+
+async function subirImagen(req, res, next) {
+  try {
+    const { id } = req.body
+    const file = req.file
+
+    const resultado = await controlador.actualizarImagenPerfil(file, id)
+    respuesta.success(req, res, resultado, 200)
+  } catch (error) {
+    next(error)
+  }
 }
 
 async function uno (req,res,next){

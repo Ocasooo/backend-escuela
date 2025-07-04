@@ -20,6 +20,16 @@ module.exports = function (dbinyectada) {
     )
   }
 
+async function obtenerMaterialAlumno(alumno_id) {
+  return db.customQuery(
+    `SELECT c.nombre AS nombre_materia, m.observacion, m.calificacion, m.tipo
+     FROM material m
+     JOIN alumno_material am ON am.material_id = m.id
+     JOIN curso c ON m.curso_id = c.id
+     WHERE am.alumno_id = ?`,
+    [alumno_id]
+  )
+}
 
   function uno(id) {
     return db.customQuery(
@@ -30,6 +40,77 @@ module.exports = function (dbinyectada) {
       WHERE m.id = ?`, [id]
     )
   }
+
+  async function actualizarCalificacion(alumno_id, calificacion, carpeta) {
+    return db.customQuery(
+      `UPDATE material m
+      JOIN alumno_material am ON am.material_id = m.id
+      SET m.calificacion = ?, m.estado = 'calificado'
+      WHERE am.alumno_id = ? AND m.carpeta = ?`,
+      [calificacion, alumno_id, carpeta]
+    )
+  }
+
+async function agregarExamen(file, observacion, curso_id, alumno_id, calificacion) {
+  if (!file || !file.buffer || !file.originalname) {
+    throw new Error('Archivo inválido')
+  }
+
+  // ✅ Crear carpeta uploads/examenes si no existe
+  const carpetaExamenes = path.join(__dirname, '../../uploads/examenes')
+  if (!fs.existsSync(carpetaExamenes)) {
+    fs.mkdirSync(carpetaExamenes, { recursive: true })
+  }
+
+  // ✅ Guardar en uploads/examenes
+  const nombreArchivo = Date.now() + '-' + file.originalname
+  const ruta = path.join('uploads', 'examenes', nombreArchivo)
+  const rutaCompleta = path.join(__dirname, '../../', ruta)
+
+  fs.writeFileSync(rutaCompleta, file.buffer)
+
+  const result = await db.customQuery(
+    `INSERT INTO material (observacion, archivo_scan, fecha_subida, curso_id, estado, calificacion, tipo)
+     VALUES (?, ?, NOW(), ?, 'enviado', ?, 'examen')`,
+    [observacion, ruta, curso_id, calificacion || '----']
+  )
+
+  const materialId = result.insertId
+
+  await db.customQuery(
+    `INSERT INTO alumno_material (alumno_id, material_id) VALUES (?, ?)`,
+    [alumno_id, materialId]
+  )
+
+  return {
+    id: materialId,
+    archivo_scan: ruta
+  }
+}
+
+async function obtenerExamenesAlumno(alumno_id, curso_id) {
+  return db.customQuery(
+    `SELECT c.nombre AS nombre_materia, m.observacion, m.calificacion
+     FROM material m
+     JOIN alumno_material am ON am.material_id = m.id
+     JOIN curso c ON m.curso_id = c.id
+     WHERE am.alumno_id = ? AND m.curso_id = ? AND m.tipo = 'examen'`,
+    [alumno_id, curso_id]
+  )
+}
+
+async function obtenerExamenesCurso(curso_id) {
+  return db.customQuery(
+    `SELECT a.dni, a.nombre, a.apellido, m.observacion, m.calificacion
+     FROM material m
+     JOIN alumno_material am ON am.material_id = m.id
+     JOIN alumno a ON a.id = am.alumno_id
+     WHERE m.curso_id = ? AND m.tipo = 'examen'`,
+    [curso_id]
+  )
+}
+
+
 
   async function agregarArchivo(file, curso_id, mensaje_id) {
     if (!file || !file.buffer || !file.originalname) {
@@ -92,9 +173,14 @@ module.exports = function (dbinyectada) {
   return {
     todos,
     uno,
+    actualizarCalificacion,
     agregarArchivo,
     eliminar,
     upload,
-    agregarEntrega
+    agregarEntrega,
+    obtenerMaterialAlumno,
+    agregarExamen,
+    obtenerExamenesAlumno,
+    obtenerExamenesCurso
   }
 }

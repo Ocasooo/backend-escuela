@@ -22,7 +22,6 @@ const error =require('./red/errors.js')
 app.use(cors({
   origin: 'http://localhost:4321'
 }));
-app.use(verificarToken);
 app.use(morgan('dev')) //Nos permite ver facilmente en consola las consultas que se van realizando
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
@@ -31,6 +30,9 @@ app.use(express.urlencoded({extended:true}))
 app.set('port',config.app.port) //asignamos un puerto
 
 //rutas
+app.use('/uploads', express.static(path.join(__dirname, '/uploads')))
+
+app.use(verificarToken);
 
 app.use('/api/alumno',alumno)
 app.use('/api/personal',personal)
@@ -44,7 +46,7 @@ app.use('/api/login',login)
 app.use('/api/material',material)
 app.use('/api/curso_html',curso_html)
 app.use(error)
-app.use('/uploads', express.static(path.join(__dirname, '/uploads')))
+
 
 
 module.exports = app

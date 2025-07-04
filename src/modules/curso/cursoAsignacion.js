@@ -50,7 +50,8 @@ module.exports = function (dbinyectada) {
       SELECT 
         a.dni,
         a.nombre, 
-        a.apellido, 
+        a.apellido,
+        ca.estado, 
         GROUP_CONCAT(c.nombre SEPARATOR ', ') AS cursos
       FROM alumno a
       JOIN curso_has_alumno ca ON a.id = ca.alumno_id

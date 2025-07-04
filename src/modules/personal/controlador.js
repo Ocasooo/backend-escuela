@@ -1,5 +1,8 @@
 const bcrypt = require('bcrypt')
 const tabla = 'personal' //APUNTA A LA TABLA
+const path = require('path')
+const fs = require('fs') // Por si tampoco tenés fs
+
 
 module.exports= function (dbinyectada){
     
@@ -26,13 +29,112 @@ module.exports= function (dbinyectada){
         return db.agregar(tabla, body);
     }
 
-    async function editar(id, body) {
-    if (body.contrasena) {
-        const saltRounds = 5;
-        const hashedPassword = await bcrypt.hash(body.contrasena, saltRounds);
-        body.contrasena = hashedPassword;
+    async function editar(id, datos) {
+        if (!id) {
+            throw new Error('ID no proporcionado')
+        }
+
+        const campos = {
+            nombre: datos.nombre,
+            apellido: datos.apellido,
+            ocupacion: datos.ocupacion,
+            fecha_nacimiento:datos.fecha_nacimiento,
+            correo: datos.correo,
+            telefono: datos.telefono,
+            dni:datos.dni
+        }
+
+        await db.customQuery(
+            `UPDATE personal 
+            SET nombre = ?, apellido = ?, correo = ?, telefono = ?, ocupacion = ?, fecha_nacimiento = ?, dni = ?
+            WHERE id = ?`,
+            [campos.nombre, campos.apellido, campos.correo, campos.telefono,campos.ocupacion,campos.fecha_nacimiento,campos.dni, id]
+        )
+
+        return { id, ...campos }
     }
-        return db.editar(tabla, id, body);
+
+    async function editarDatosPersonales(id, datos) {
+        if (!id) {
+            throw new Error('ID no proporcionado')
+        }
+
+        // Preparar query dinámico solo con los campos que queremos
+        const campos = {
+            nombre: datos.nombre,
+            apellido: datos.apellido,
+            correo: datos.correo,
+            telefono: datos.telefono
+        }
+
+        await db.customQuery(
+            `UPDATE personal 
+            SET nombre = ?, apellido = ?, correo = ?, telefono = ?
+            WHERE id = ?`,
+            [campos.nombre, campos.apellido, campos.correo, campos.telefono, id]
+        )
+
+        return { id, ...campos }
+    }
+
+    async function actualizarImagenPerfil(file, id) {
+        if (!file || !file.buffer || !file.originalname) {
+            throw new Error('Archivo inválido')
+        }
+
+        if (!id) {
+            throw new Error('ID de personal no proporcionado')
+        }
+
+        const nombreArchivo = Date.now() + '-' + file.originalname
+        const rutaRelativa = path.join('uploads', 'perfil', nombreArchivo)
+        const rutaCompleta = path.join(__dirname, '../../', rutaRelativa)
+
+        // Crear la carpeta si no existe
+        fs.mkdirSync(path.dirname(rutaCompleta), { recursive: true })
+
+        fs.writeFileSync(rutaCompleta, file.buffer)
+
+        // Actualizar la ruta de la imagen en la base de datos
+        await db.customQuery(
+            `UPDATE personal SET imagen = ? WHERE id = ?`,
+            [rutaRelativa, id]
+        )
+
+        return {
+            id,
+            imagen: rutaRelativa
+        }
+        }
+    
+    async function actualizarContrasena(id, actualContrasena, nuevaContrasena) {
+        // Traer datos actuales del personal
+        const personal = await db.customQuery(`SELECT * FROM personal WHERE id = ?`, [id])
+
+        if (!personal || personal.length === 0) {
+            throw new Error('Personal no encontrado')
+        }
+
+        const usuario = personal[0]
+
+        // Validar contraseña actual
+        const valid = await bcrypt.compare(actualContrasena, usuario.contrasena)
+
+        if (!valid) {
+            throw new Error('Contraseña actual incorrecta')
+        }
+
+        // Encriptar nueva contraseña
+        const saltRounds = 5
+        const hashedNueva = await bcrypt.hash(nuevaContrasena, saltRounds)
+
+        // Actualizar en base de datos
+        await db.customQuery(
+            `UPDATE personal SET contrasena = ? WHERE id = ?`,
+            [hashedNueva, id]
+        )
+
+        return { mensaje: 'Contraseña actualizada correctamente' }
     }
 
     function eliminar(body){
@@ -44,6 +146,9 @@ module.exports= function (dbinyectada){
         uno,
         agregar,
         eliminar,
-        editar
+        editar,
+        actualizarContrasena,
+        actualizarImagenPerfil,
+        editarDatosPersonales
     }
 }
