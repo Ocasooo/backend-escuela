@@ -38,9 +38,22 @@ module.exports= function (dbinyectada){
         return db.editar(tabla, id, body);
     }
 
-    function eliminar(body){
-        return db.eliminar(tabla,body)
+    async function eliminar(body) {
+        try {
+            const alumnoId = body.id
+
+            // Primero borrar registros hijos
+            await db.customQuery(`DELETE FROM curso_has_alumno WHERE alumno_id = ?`, [alumnoId])
+
+            // Ahora borrar en la tabla alumno
+            return await db.eliminar(tabla, body)
+        } catch (error) {
+            console.error('Error al eliminar alumno con referencias:', error)
+            throw error
+        }
     }
+
+
 
     async function actualizarImagenPerfil(file, id) {
         if (!file || !file.buffer || !file.originalname) {

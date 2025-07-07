@@ -5,15 +5,21 @@ const { crud, relaciones } = require('./index.js')
 const router = express.Router()
 
 // === RUTAS DE RELACIONES ALUMNO ===
+router.post('/egresar-alumno',egresarAlumno)
+router.get('/alumnos-cursos', traerAlumnosConCursos)
 router.post('/asignar-alumno', asignarAlumno)
 router.delete('/quitar-alumno', quitarAlumno)
+router.post('/alumnos-por-curso', alumnoDetallePorCurso)
 router.get('/alumno/:id/cursos', cursosPorAlumno)
+router.get('/:id/notasDelCurso',obtenerNotasPorCurso)
+router.patch('/cargarNotaCursado',cargarNotaCursada)
 router.get('/:id/alumnos', alumnosPorCursoConEstado)
 router.get('/resumen', resumenCursosTabla)
 router.get('/:id/alumnos-simples', alumnosPorCurso)
 
 
 // === RUTAS DE RELACIONES PERSONAL ===
+router.get('/profesores-con-cursos', obtenerProfesoresConCursos)
 router.post('/asignar-personal', asignarPersonal)
 router.delete('/quitar-personal', quitarPersonal)
 router.get('/personal/:id/cursos', cursosPorPersonal)
@@ -37,6 +43,50 @@ async function todos(req, res, next) {
     respuesta.success(req, res, items, 200)
   } catch (err) {
     next(err)
+  }
+}
+
+ async function egresarAlumno (req, res){
+  try {
+    const { id_alumno, nota } = req.body
+
+    if (!id_alumno || !nota) {
+      return res.status(400).json({ error: 'Faltan datos: id_alumno y nota son obligatorios' })
+    }
+
+    await relaciones.egresarAlumno(id_alumno, nota)
+
+    res.status(200).json({ message: 'Alumno egresado correctamente' })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al egresar alumno' })
+  }
+}
+
+
+
+async function alumnoDetallePorCurso (req, res, next) {
+  try {
+    const { idCurso } = req.body
+
+    if (!idCurso) {
+      return respuesta.error(req, res, 'Falta idCurso en el body', 400)
+    }
+
+    const alumnos = await relaciones.alumnosDetallePorCurso(idCurso)
+
+    respuesta.success(req, res, alumnos, 200)
+  } catch (error) {
+    next(error)
+  }
+}
+
+async function obtenerProfesoresConCursos(req, res, next) {
+  try {
+    const data = await relaciones.profesoresConCursos()
+    respuesta.success(req, res, data, 200)
+  } catch (error) {
+    next(error)
   }
 }
 
@@ -89,13 +139,19 @@ async function asignarAlumno(req, res, next) {
 
 async function quitarAlumno(req, res, next) {
   try {
-    const { id_alumno, id_curso } = req.body
-    await relaciones.quitarAlumno(id_alumno, id_curso)
-    respuesta.success(req, res, 'Alumno quitado', 200)
+    const { id_alumno, id_curso, anio } = req.body
+
+    if (!id_alumno || !id_curso || !anio) {
+      return respuesta.error(req, res, 'Faltan datos: id_alumno, id_curso o anio', 400)
+    }
+
+    await relaciones.quitarAlumno(id_alumno, id_curso, anio)
+    respuesta.success(req, res, 'Alumno marcado como abandonado', 200)
   } catch (err) {
     next(err)
   }
 }
+
 
 async function cursosPorAlumno(req, res, next) {
   try {
@@ -239,6 +295,46 @@ async function alumnosPorCurso(req, res, next) {
   }
 }
 
+async function obtenerNotasPorCurso(req, res, next){
+  try {
+    const cursoId = Number(req.params.id)
+
+    if (!cursoId || isNaN(cursoId)) {
+      respuesta.error(req, res, 'ID de curso inválido', 400)
+      return
+    }
+
+    const notas = await relaciones.obtenerNotasPorCurso(cursoId)
+    respuesta.success(req, res, notas, 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
+async function cargarNotaCursada(req, res, next){
+  try {
+    const { nota, cursoId, alumnoId } = req.body
+
+    if (!nota || !cursoId || !alumnoId) {
+      respuesta.error(req, res, 'Faltan datos: nota, cursoId o alumnoId', 400)
+      return
+    }
+
+    await relaciones.cargarNota(nota, cursoId, alumnoId)
+    respuesta.success(req, res, 'Nota actualizada correctamente', 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
+async function traerAlumnosConCursos(req, res, next) {
+  try {
+    const data = await relaciones.alumnosConCursos() // ✅ cambiar controlador → relaciones
+    respuesta.success(req, res, data, 200)
+  } catch (error) {
+    next(error)
+  }
+}
 
 
 

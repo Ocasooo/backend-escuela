@@ -9,12 +9,10 @@ const router = express.Router()
 //Rutas urls
 router.get('/', todos);
 router.post('/subir-imagen', upload.single('imagen'), subirImagen)
-router.get('/:id', uno);
-router.post('/', agregar);
-router.put('/:id', editar);
 router.put('/', eliminar);
-
-
+router.post('/', agregar);
+router.get('/:id', uno);
+router.put('/:id', editar);
 
 //funcionalidad
 async function todos (req,res,next){
@@ -85,14 +83,13 @@ async function editar(req, res, next) {
   }
 }
 
-async function eliminar (req,res,next){
-    try{
-        const items = await controlador.eliminar(req.body)
-            respuesta.success(req,res,'items eliminado',200)
-    }catch(err){
-        next(err)
+async function eliminar(req, res, next) {
+    try {
+        await controlador.eliminar(req.body)
+        respuesta.success(req, res, 'Elemento eliminado', 200)
+    } catch (error) {
+        next(error)
     }
-    
 }
     
 module.exports = router

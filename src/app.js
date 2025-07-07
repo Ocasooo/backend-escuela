@@ -1,7 +1,7 @@
 const express= require('express')
 const config = require('./config') //configuramos express
 const morgan = require('morgan')
-const cors = require('cors'); 
+const cors = require('cors') 
 const alumno = require('./modules/alumno/rutas.js') //Ruta de la tabla usuarios
 const personal = require('./modules/personal/rutas.js') //Ruta de la tabla usuarios
 const curso = require('./modules/curso/rutas.js') //Ruta de la tabla usuarios
@@ -11,6 +11,7 @@ const mensaje = require('./modules/mensaje/rutas.js') //Ruta de la tabla usuario
 const material = require('./modules/material/rutas.js') //Ruta de la tabla usuarios
 const unidades = require('./modules/unidades/rutas.js') //Ruta de la tabla usuarios
 const login = require('./modules/login/rutas.js') //Ruta de la tabla usuarios
+const aula = require('./modules/aula/rutas.js')
 const curso_html = require('./modules/curso_html/rutas.js')
 const verificarToken = require('./modules/login/middleware')
 const path = require('path')
@@ -45,6 +46,7 @@ app.use('/api/unidades',unidades)
 app.use('/api/login',login)
 app.use('/api/material',material)
 app.use('/api/curso_html',curso_html)
+app.use('/api/aula',aula)
 app.use(error)
 
 

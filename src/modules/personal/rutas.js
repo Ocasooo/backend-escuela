@@ -1,30 +1,86 @@
 const express = require('express')
-const respuesta = require('../../red/respuestas.js')//importamos las repuestas
+const respuesta = require('../../red/respuestas.js')
 const controlador = require('./index.js')
 const router = express.Router()
 const multer = require('multer')
 const upload = multer({ storage: multer.memoryStorage() })
 
-//Rutas urls
+// Rutas urls
 router.post('/subir-imagen', upload.single('imagen'), subirImagen)
-router.patch('/editarDatosPersonales',express.json(), editarDatosPersonales)
-router.patch('/editar',express.json(), editar)
-router.get('/',todos)
+router.patch('/editarDatosPersonales', express.json(), editarDatosPersonales)
+router.patch('/editar', express.json(), editar)
+router.get('/', todos)
 router.patch('/cambiar-contrasena', cambiarContrasena)
 router.post('/', agregar)
-router.put('/',eliminar)
-router.get('/:id',uno)
+router.put('/', eliminar)
+router.get('/:id', uno)
 
+// Funcionalidad
+async function todos(req, res, next) {
+  try {
+    const items = await controlador.todos()
+    respuesta.success(req, res, items, 200)
+  } catch (err) {
+    console.error(err)
+    const mensaje = err.sqlMessage || err.message || 'Error interno'
+    respuesta.error(req, res, mensaje, 500)
+  }
+}
 
-//funcionalidad
-async function todos (req,res,next){
-    try{
-        const items = await controlador.todos()
-            respuesta.success(req,res,items,200)
-    }catch(err){
-        next(err)
+async function uno(req, res, next) {
+  try {
+    const items = await controlador.uno(req.params.id)
+    respuesta.success(req, res, items, 200)
+  } catch (err) {
+    console.error(err)
+    const mensaje = err.sqlMessage || err.message || 'Error interno'
+    respuesta.error(req, res, mensaje, 500)
+  }
+}
+
+async function agregar(req, res, next) {
+  try {
+    const resultado = await controlador.agregar(req.body)
+    respuesta.success(req, res, 'Item guardado con éxito', 201)
+  } catch (err) {
+    console.error(err)
+    const mensaje = err.sqlMessage || err.message || 'Error interno'
+    respuesta.error(req, res, mensaje, 500)
+  }
+}
+
+async function eliminar(req, res, next) {
+  try {
+    const items = await controlador.eliminar(req.body)
+    respuesta.success(req, res, 'Items eliminado', 200)
+  } catch (err) {
+    console.error(err)
+    const mensaje = err.sqlMessage || err.message || 'Error interno'
+    respuesta.error(req, res, mensaje, 500)
+  }
+}
+
+async function editar(req, res, next) {
+  try {
+    const { id, nombre, apellido, correo, telefono, ocupacion, fecha_nacimiento, dni } = req.body
+
+    const datos = {
+      nombre,
+      apellido,
+      correo,
+      telefono,
+      ocupacion,
+      fecha_nacimiento,
+      dni
     }
-    
+
+    const resultado = await controlador.editar(id, datos)
+    respuesta.success(req, res, resultado, 200)
+  } catch (error) {
+    console.error(error)
+    const mensaje = error.sqlMessage || error.message || 'Error interno'
+    respuesta.error(req, res, mensaje, 500)
+  }
 }
 
 async function editarDatosPersonales(req, res, next) {
@@ -41,28 +97,9 @@ async function editarDatosPersonales(req, res, next) {
     const resultado = await controlador.editarDatosPersonales(id, datos)
     respuesta.success(req, res, resultado, 200)
   } catch (error) {
-    next(error)
-  }
-}
-
-async function editar(req, res, next) {
-  try {
-    const { id, nombre, apellido, correo, telefono,ocupacion,fecha_nacimiento,dni } = req.body
-
-    const datos = {
-      nombre,
-      apellido,
-      correo,
-      telefono,
-      ocupacion,
-      fecha_nacimiento,
-      dni
-    }
-
-    const resultado = await controlador.editar(id, datos)
-    respuesta.success(req, res, resultado, 200)
-  } catch (error) {
-    next(error)
+    console.error(error)
+    const mensaje = error.sqlMessage || error.message || 'Error interno'
+    respuesta.error(req, res, mensaje, 500)
   }
 }
 
@@ -74,7 +111,9 @@ async function subirImagen(req, res, next) {
     const resultado = await controlador.actualizarImagenPerfil(file, id)
     respuesta.success(req, res, resultado, 200)
   } catch (error) {
-    next(error)
+    console.error(error)
+    const mensaje = error.sqlMessage || error.message || 'Error interno'
+    respuesta.error(req, res, mensaje, 500)
   }
 }
 
@@ -89,39 +128,10 @@ async function cambiarContrasena(req, res, next) {
     const resultado = await controlador.actualizarContrasena(id, actualContrasena, nuevaContrasena)
     respuesta.success(req, res, resultado, 200)
   } catch (err) {
-    next(err)
+    console.error(err)
+    const mensaje = err.sqlMessage || err.message || 'Error interno'
+    respuesta.error(req, res, mensaje, 500)
   }
 }
 
-
-async function uno (req,res,next){
-    try{
-        const items = await controlador.uno(req.params.id)
-            respuesta.success(req,res,items,200)
-    }
-    catch(err){
-        next(err)
-    }
-
-}
-
-async function agregar(req, res, next) {
-  try {
-    const resultado = await controlador.agregar(req.body);
-    respuesta.success(req, res, 'Item guardado con éxito', 201);
-  } catch (err) {
-    next(err);
-  }
-}
-
-async function eliminar (req,res,next){
-    try{
-        const items = await controlador.eliminar(req.body)
-            respuesta.success(req,res,'items eliminado',200)
-    }catch(err){
-        next(err)
-    }
-    
-}
-    
 module.exports = router
