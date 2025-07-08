@@ -16,6 +16,23 @@ router.put('/', eliminar)
 router.get('/:id', uno)
 
 // Funcionalidad
+
+router.patch('/reemplazar-contrasena', async (req, res, next) => {
+    try {
+        const { id, nuevaContrasena } = req.body
+
+        if (!id || !nuevaContrasena) {
+            return respuesta.error(req, res, 'Faltan datos: id y nueva contraseña', 400)
+        }
+
+        await controlador.reemplazarContrasena(id, nuevaContrasena)
+        respuesta.success(req, res, 'Contraseña reemplazada correctamente', 200)
+    } catch (err) {
+        next(err)
+    }
+})
+
+
 async function todos(req, res, next) {
   try {
     const items = await controlador.todos()

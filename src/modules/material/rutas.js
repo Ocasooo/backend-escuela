@@ -24,6 +24,23 @@ router.patch('/calificar', actualizarCalificacion)
 
 // --- PUT ---
 router.put('/', eliminar)
+router.delete('/carpeta/:nombre', eliminarPorCarpeta)
+
+async function eliminarPorCarpeta(req, res, next) {
+  try {
+    const { nombre } = req.params
+
+    if (!nombre) {
+      return respuesta.error(req, res, 'Falta el nombre de la carpeta', 400)
+    }
+
+    await controlador.eliminarPorCarpeta(nombre)
+
+    respuesta.success(req, res, 'Carpeta y archivos eliminados correctamente', 200)
+  } catch (err) {
+    next(err)
+  }
+}
 
 
 async function descargarArchivo(req, res, next) {

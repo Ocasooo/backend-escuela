@@ -101,7 +101,7 @@ async function obtenerExamenesAlumno(alumno_id, curso_id) {
 
 async function obtenerExamenesCurso(curso_id) {
   return db.customQuery(
-    `SELECT a.dni, a.nombre, a.apellido, m.observacion, m.calificacion
+    `SELECT a.dni, a.nombre, a.apellido, m.observacion, m.calificacion,m.id
      FROM material m
      JOIN alumno_material am ON am.material_id = m.id
      JOIN alumno a ON a.id = am.alumno_id
@@ -170,6 +170,28 @@ async function obtenerExamenesCurso(curso_id) {
     return db.eliminar(tabla, data)
   }
 
+  async function eliminarPorCarpeta(carpeta) {
+  // Primero obtener todos los materiales que tienen esa carpeta, para borrar archivos físicos si es necesario
+  const materiales = await db.customQuery(`SELECT archivo_scan FROM material WHERE carpeta = ?`, [carpeta])
+
+  // Eliminar archivos físicos
+  materiales.forEach(mat => {
+    if (mat.archivo_scan) {
+      const rutaCompleta = path.join(__dirname, '../../', mat.archivo_scan)
+      if (fs.existsSync(rutaCompleta)) {
+        fs.unlinkSync(rutaCompleta)
+      }
+    }
+  })
+
+  // Borrar registros de la tabla alumno_material
+  await db.customQuery(`DELETE FROM alumno_material WHERE material_id IN (SELECT id FROM material WHERE carpeta = ?)`, [carpeta])
+
+  // Finalmente, borrar de material
+  await db.customQuery(`DELETE FROM material WHERE carpeta = ?`, [carpeta])
+}
+
+
   return {
     todos,
     uno,
@@ -181,6 +203,7 @@ async function obtenerExamenesCurso(curso_id) {
     obtenerMaterialAlumno,
     agregarExamen,
     obtenerExamenesAlumno,
-    obtenerExamenesCurso
+    obtenerExamenesCurso,
+    eliminarPorCarpeta
   }
 }

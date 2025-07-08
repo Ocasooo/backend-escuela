@@ -85,6 +85,74 @@ module.exports= function (dbinyectada){
         }
     }
 
+    async function reemplazarContrasena(id, nuevaContrasena) {
+    if (!id || !nuevaContrasena) {
+        throw new Error('ID y nueva contraseña son requeridos')
+    }
+
+    const saltRounds = 5
+    const hashedNueva = await bcrypt.hash(nuevaContrasena, saltRounds)
+
+    await db.customQuery(
+        `UPDATE alumno SET contrasena = ? WHERE id = ?`,
+        [hashedNueva, id]
+    )
+
+    return { mensaje: 'Contraseña reemplazada correctamente' }
+}
+
+async function editarDatosPersonales(id, datos) {
+  if (!id) {
+    throw new Error('ID no proporcionado')
+  }
+
+  const campos = {
+    nombre: datos.nombre,
+    apellido: datos.apellido,
+    correo: datos.correo,
+    telefono: datos.telefono
+  }
+
+  await db.customQuery(
+    `UPDATE alumno 
+     SET nombre = ?, apellido = ?, correo = ?, telefono = ?
+     WHERE id = ?`,
+    [campos.nombre, campos.apellido, campos.correo, campos.telefono, id]
+  )
+
+  return { id, ...campos }
+}
+
+async function actualizarContrasena(id, actualContrasena, nuevaContrasena) {
+    // Traer datos actuales del alumno
+    const alumno = await db.customQuery(`SELECT * FROM alumno WHERE id = ?`, [id])
+
+    if (!alumno || alumno.length === 0) {
+        throw new Error('Alumno no encontrado')
+    }
+
+    const usuario = alumno[0]
+
+    // Validar contraseña actual
+    const valid = await bcrypt.compare(actualContrasena, usuario.contrasena)
+
+    if (!valid) {
+        throw new Error('Contraseña actual incorrecta')
+    }
+
+    // Encriptar nueva contraseña
+    const saltRounds = 5
+    const hashedNueva = await bcrypt.hash(nuevaContrasena, saltRounds)
+
+    // Actualizar en base de datos
+    await db.customQuery(
+        `UPDATE alumno SET contrasena = ? WHERE id = ?`,
+        [hashedNueva, id]
+    )
+
+    return { mensaje: 'Contraseña actualizada correctamente' }
+}
+
 
     return {
         todos,
@@ -92,6 +160,9 @@ module.exports= function (dbinyectada){
         agregar,
         eliminar,
         editar,
-        actualizarImagenPerfil
+        actualizarImagenPerfil,
+        reemplazarContrasena,
+        editarDatosPersonales,
+        actualizarContrasena
     }
 }

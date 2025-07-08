@@ -137,9 +137,36 @@ module.exports= function (dbinyectada){
         return { mensaje: 'Contraseña actualizada correctamente' }
     }
 
-    function eliminar(body){
-        return db.eliminar(tabla,body)
+    async function eliminar(body) {
+        if (!body || !body.id) {
+            throw new Error('ID no proporcionado para eliminar')
+        }
+
+        const idPersonal = body.id
+
+        // Primero eliminamos de la tabla intermedia
+        await db.customQuery(`DELETE FROM curso_has_personal WHERE personal_id = ?`, [idPersonal])
+
+        // Después eliminamos de la tabla 'personal'
+        return db.eliminar(tabla, body)
     }
+
+    async function reemplazarContrasena(id, nuevaContrasena) {
+        if (!id || !nuevaContrasena) {
+            throw new Error('ID y nueva contraseña son requeridos')
+        }
+
+        const saltRounds = 5
+        const hashedNueva = await bcrypt.hash(nuevaContrasena, saltRounds)
+
+        await db.customQuery(
+            `UPDATE personal SET contrasena = ? WHERE id = ?`,
+            [hashedNueva, id]
+        )
+
+        return { mensaje: 'Contraseña reemplazada correctamente' }
+    }
+
 
     return {
         todos,
@@ -149,6 +176,7 @@ module.exports= function (dbinyectada){
         editar,
         actualizarContrasena,
         actualizarImagenPerfil,
-        editarDatosPersonales
+        editarDatosPersonales,
+        reemplazarContrasena
     }
 }

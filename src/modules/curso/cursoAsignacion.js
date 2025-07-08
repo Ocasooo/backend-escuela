@@ -5,9 +5,10 @@ module.exports = function (dbinyectada) {
     db = require('../../DB/mysql.js')
   }
 
-  function asignarAlumno(idAlumno, idCurso) {
-    return db.agregar('curso_has_alumno', { alumno_id: idAlumno, curso_id: idCurso })
-  }
+function asignarAlumno(idAlumno, idCurso) {
+  const anioActual = new Date().getFullYear()
+  return db.agregar('curso_has_alumno', { alumno_id: idAlumno, curso_id: idCurso, anio: anioActual })
+}
 
   function quitarAlumno(idAlumno, idCurso, anio) {
     return db.customQuery(
@@ -79,20 +80,25 @@ module.exports = function (dbinyectada) {
         a.nombre,
         a.apellido,
         cha.nota,
-        cha.curso_id
+        cha.curso_id,
+        cha.anio
       FROM curso_has_alumno cha
       JOIN alumno a ON cha.alumno_id = a.id
       WHERE cha.curso_id = ?
     `, [cursoId])
   }
 
-  function cargarNota(nota, cursoId, alumnoId) {
-    return db.customQuery(`
-      UPDATE curso_has_alumno
-      SET nota = ?
-      WHERE curso_id = ? AND alumno_id = ?
-    `, [nota, cursoId, alumnoId])
-  }
+function cargarNota(nota, cursoId, alumnoId) {
+  // Definir el estado en base a la nota
+  const estado = nota < 6 ? 'desaprobado' : 'cursando'
+
+  return db.customQuery(`
+    UPDATE curso_has_alumno
+    SET nota = ?, estado_terminacion = ?
+    WHERE curso_id = ? AND alumno_id = ?
+  `, [nota, estado, cursoId, alumnoId])
+}
+
 
 
 
@@ -109,20 +115,23 @@ module.exports = function (dbinyectada) {
     `, [idCurso])
   }
 
-  function resumenCursos() {
+function resumenCursos() {
   return db.customQuery(`
     SELECT 
       c.id,
       c.nombre,
       c.descripcion,
+      cha.anio,
       COUNT(cha.alumno_id) AS inscriptos,
       IFNULL(SUM(cha.estado_terminacion = 'abandonado'), 0) AS abandonos,
-      IFNULL(SUM(cha.estado_terminacion = 'aprobado'), 0) AS egresados
+      IFNULL(SUM(cha.estado_terminacion = 'egresado'), 0) AS egresados,
+      IFNULL(SUM(cha.estado_terminacion = 'desaprobado'), 0) AS desaprobados
     FROM curso c
     LEFT JOIN curso_has_alumno cha ON c.id = cha.curso_id
-    GROUP BY c.id;
+    GROUP BY c.id, cha.anio;
   `)
-  }
+}
+
 
   function profesoresPorCurso(idCurso) {
     return db.customQuery(`
@@ -153,7 +162,7 @@ module.exports = function (dbinyectada) {
 
   function alumnosPorCurso(idCurso) {
     return db.customQuery(`
-      SELECT a.id, a.nombre, a.apellido, a.dni
+      SELECT a.id, a.nombre, a.apellido, a.dni, ca.anio
       FROM curso_has_alumno ca
       JOIN alumno a ON ca.alumno_id = a.id
       WHERE ca.curso_id = ?
@@ -170,7 +179,8 @@ module.exports = function (dbinyectada) {
         a.apellido,
         ca.anio,
         ca.estado_terminacion,
-        c.nombre AS curso_nombre
+        c.nombre AS curso_nombre,
+        ca.nota
       FROM curso_has_alumno ca
       JOIN alumno a ON ca.alumno_id = a.id
       JOIN curso c ON ca.curso_id = c.id
@@ -189,6 +199,25 @@ module.exports = function (dbinyectada) {
     JOIN alumno a ON ca.alumno_id = a.id
     WHERE ca.curso_id = ?
   `, [idCurso])
+}
+
+function quitarEgresado(idAlumno, idCurso, anio) {
+  return db.customQuery(`
+    UPDATE curso_has_alumno
+    SET estado_terminacion = CASE 
+      WHEN nota < 6 THEN 'desaprobado'
+      ELSE 'cursando'
+    END
+    WHERE alumno_id = ? AND curso_id = ? AND anio = ? AND estado_terminacion = 'egresado'
+  `, [idAlumno, idCurso, anio])
+}
+
+function titularAlumno(idAlumno, idCurso, anio, nota) {
+  return db.customQuery(`
+    UPDATE curso_has_alumno
+    SET estado_terminacion = 'egresado', nota = ?
+    WHERE alumno_id = ? AND curso_id = ? AND anio = ? AND estado_terminacion = 'cursando'
+  `, [nota, idAlumno, idCurso, anio])
 }
 
 
@@ -210,6 +239,8 @@ module.exports = function (dbinyectada) {
     alumnosConCursos,
     profesoresConCursos,
     alumnosDetallePorCurso,
-    egresarAlumno
+    egresarAlumno,
+    quitarEgresado,
+    titularAlumno
   }
 }

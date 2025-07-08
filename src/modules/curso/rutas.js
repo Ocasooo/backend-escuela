@@ -10,6 +10,7 @@ router.get('/alumnos-cursos', traerAlumnosConCursos)
 router.post('/asignar-alumno', asignarAlumno)
 router.delete('/quitar-alumno', quitarAlumno)
 router.post('/alumnos-por-curso', alumnoDetallePorCurso)
+router.patch('/quitar-egresado', quitarEgresado)
 router.get('/alumno/:id/cursos', cursosPorAlumno)
 router.get('/:id/notasDelCurso',obtenerNotasPorCurso)
 router.patch('/cargarNotaCursado',cargarNotaCursada)
@@ -37,6 +38,24 @@ router.put('/', eliminar)
 router.get('/:id/detalle-con-usuario', detalleConUsuario)
 
 // === FUNCIONES CRUD ===
+
+router.patch('/titular', async (req, res, next) => {
+  try {
+    const { id_alumno, id_curso, anio, nota } = req.body
+
+    if (!id_alumno || !id_curso || !anio || !nota) {
+      return respuesta.error(req, res, 'Faltan datos para titular', 400)
+    }
+
+    await relaciones.titularAlumno(id_alumno, id_curso, anio, nota)
+
+    respuesta.success(req, res, 'Alumno titulado correctamente', 200)
+  } catch (error) {
+    next(error)
+  }
+})
+
+
 async function todos(req, res, next) {
   try {
     const items = await crud.todos()
@@ -45,6 +64,23 @@ async function todos(req, res, next) {
     next(err)
   }
 }
+
+async function quitarEgresado(req, res, next) {
+  try {
+    const { id_alumno, id_curso, anio } = req.body
+
+    if (!id_alumno || !id_curso || !anio) {
+      return respuesta.error(req, res, 'Faltan datos: id_alumno, id_curso o anio', 400)
+    }
+
+    await relaciones.quitarEgresado(id_alumno, id_curso, anio)
+
+    respuesta.success(req, res, 'Estado de egresado quitado correctamente', 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
 
  async function egresarAlumno (req, res){
   try {

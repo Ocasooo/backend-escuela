@@ -15,6 +15,55 @@ router.get('/:id', uno);
 router.put('/:id', editar);
 
 //funcionalidad
+
+router.patch('/cambiar-contrasena', async (req, res, next) => {
+  try {
+    const { id, actualContrasena, nuevaContrasena } = req.body
+
+    if (!id || !actualContrasena || !nuevaContrasena) {
+      return respuesta.error(req, res, 'Faltan datos: id, contraseña actual o nueva contraseña', 400)
+    }
+
+    const resultado = await controlador.actualizarContrasena(id, actualContrasena, nuevaContrasena)
+    respuesta.success(req, res, resultado, 200)
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.patch('/reemplazar-contrasena', async (req, res, next) => {
+    try {
+        const { id, nuevaContrasena } = req.body
+
+        if (!id || !nuevaContrasena) {
+            return respuesta.error(req, res, 'Faltan datos: id y nueva contraseña', 400)
+        }
+
+        await controlador.reemplazarContrasena(id, nuevaContrasena)
+        respuesta.success(req, res, 'Contraseña reemplazada correctamente', 200)
+    } catch (err) {
+        next(err)
+    }
+})
+
+router.patch('/editarDatosPersonales', async function (req, res, next) {
+  try {
+    const id = req.body.id
+    const datos = {
+      nombre: req.body.nombre,
+      apellido: req.body.apellido,
+      correo: req.body.correo,
+      telefono: req.body.telefono
+    }
+
+    const result = await controlador.editarDatosPersonales(id, datos)
+    respuesta.success(req, res, result, 200)
+  } catch (err) {
+    next(err)
+  }
+})
+
+
 async function todos (req,res,next){
     try{
         const items = await controlador.todos()
