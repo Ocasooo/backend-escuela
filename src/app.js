@@ -82,18 +82,24 @@ app.get('/health', (req, res) => {
 // Middleware de autenticación para endpoints protegidos
 app.use(verificarToken)
 
-// Rutas de la API
-app.use('/api/alumno', alumno)
-app.use('/api/personal', personal)
-app.use('/api/curso', curso)
-app.use('/api/examen', examen)
-app.use('/api/foro', foro)
-app.use('/api/material', material)
-app.use('/api/mensaje', mensaje)
-app.use('/api/unidades', unidades)
-app.use('/api/login', login)
-app.use('/api/curso_html', curso_html)
-app.use('/api/aula', aula)
+// Rutas de la API (compatibilidad total tanto para llamadas con /api/... como sin /api/...)
+const modulos = [
+  ['/alumno', alumno],
+  ['/personal', personal],
+  ['/curso', curso],
+  ['/examen', examen],
+  ['/foro', foro],
+  ['/material', material],
+  ['/mensaje', mensaje],
+  ['/unidades', unidades],
+  ['/login', login],
+  ['/curso_html', curso_html],
+  ['/aula', aula]
+]
+modulos.forEach(([prefix, router]) => {
+  app.use(`/api${prefix}`, router)
+  app.use(prefix, router)
+})
 app.use(error)
 
 module.exports = app

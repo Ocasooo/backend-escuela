@@ -9,8 +9,14 @@ function verificarToken(req, res, next) {
     '/api/material/descargar'
   ]
 
-  // Permitir la ruta de login exacta o subrutas públicas, pero NO /api/login/token-dev ni similares
-  if (req.originalUrl === '/api/login' || req.originalUrl.startsWith('/api/login?') || req.originalUrl.startsWith('/api/material/descargar')) {
+  // Permitir la ruta de login exacta o subrutas públicas (con o sin /api)
+  const url = req.originalUrl || req.url
+  if (
+    url === '/api/login' || url.startsWith('/api/login?') ||
+    url === '/login' || url.startsWith('/login?') ||
+    url.startsWith('/api/material/descargar') ||
+    url.startsWith('/material/descargar')
+  ) {
     return next()
   }
 
