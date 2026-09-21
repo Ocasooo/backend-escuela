@@ -9,12 +9,13 @@ async function initDatabase() {
   const dbName = config.mysql.database || 'escuela'
   console.log(`🚀 Iniciando creación de base de datos '${dbName}' en MySQL...`)
 
-  // 1. Conexión sin base de datos seleccionada
+  // 1. Conexión al servidor MySQL
   const connConfig = {
     host: config.mysql.host,
     port: config.mysql.port,
     user: config.mysql.user,
     password: config.mysql.password,
+    database: config.mysql.database || undefined,
     multipleStatements: true
   }
   if (config.mysql.ssl) {
@@ -29,10 +30,14 @@ async function initDatabase() {
     }
 
     try {
-      // 2. Crear base de datos
-      await queryPromise(conexion, `CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`)
+      // 2. Crear o usar base de datos existente
+      try {
+        await queryPromise(conexion, `CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`)
+      } catch (dbErr) {
+        console.log(`ℹ️ [Aviso]: Base de datos '${dbName}' gestionada por el proveedor en la nube.`)
+      }
       await queryPromise(conexion, `USE \`${dbName}\`;`)
-      console.log(`✅ Base de datos '${dbName}' creada o seleccionada exitosamente.`)
+      console.log(`✅ Base de datos '${dbName}' seleccionada exitosamente.`)
 
       // 3. Ejecutar esquema SQL
       const rutaEsquema = path.join(__dirname, '../../esquema_escuela.sql')
