@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 const db = require('../../DB/mysql.js')
-const SECRET = process.env.JWT_SECRET || 'claveSuperSecreta'
+const config = require('../../config.js')
+const SECRET = config.jwt.secret
 
 module.exports = function () {
   async function login(datos) {

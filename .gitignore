@@ -1,0 +1,31 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno y secretos
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos subidos dinámicamente en ejecución (no versionar en git)
+uploads/*
+!uploads/.gitkeep
+uploads/examenes/*
+!uploads/examenes/.gitkeep
+uploads/perfil/*
+!uploads/perfil/.gitkeep
+uploads/foro/*
+!uploads/foro/.gitkeep
+src/uploads/*
+!src/uploads/.gitkeep
+
+# Archivos temporales de sistema operativo
+.DS_Store
+Thumbs.db

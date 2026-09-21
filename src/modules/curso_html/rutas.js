@@ -1,14 +1,15 @@
 const express = require('express')
 const respuesta = require('../../red/respuestas.js')
 const controlador = require('./index.js')
+const { requiereRol } = require('../../middleware/roles.js')
 
 const router = express.Router()
 
 router.get('/', todos)
 router.get('/curso/:cursoId', porCurso)
 router.get('/:id', uno)
-router.post('/guardar', guardarHTML)
-router.delete('/', eliminar)
+router.post('/guardar', requiereRol('profesor'), guardarHTML)
+router.delete('/', requiereRol('profesor'), eliminar)
 
 async function todos(req, res, next) {
   try {

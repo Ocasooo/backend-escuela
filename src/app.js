@@ -1,54 +1,119 @@
-const express= require('express')
-const config = require('./config') //configuramos express
+const express = require('express')
+const config = require('./config')
 const morgan = require('morgan')
-const cors = require('cors') 
-const alumno = require('./modules/alumno/rutas.js') //Ruta de la tabla usuarios
-const personal = require('./modules/personal/rutas.js') //Ruta de la tabla usuarios
-const curso = require('./modules/curso/rutas.js') //Ruta de la tabla usuarios
-const examen = require('./modules/examen/rutas.js') //Ruta de la tabla usuarios
-const foro = require('./modules/foro/rutas.js') //Ruta de la tabla usuarios
-const mensaje = require('./modules/mensaje/rutas.js') //Ruta de la tabla usuarios
-const material = require('./modules/material/rutas.js') //Ruta de la tabla usuarios
-const unidades = require('./modules/unidades/rutas.js') //Ruta de la tabla usuarios
-const login = require('./modules/login/rutas.js') //Ruta de la tabla usuarios
+const cors = require('cors')
+const path = require('path')
+const fs = require('fs')
+
+const alumno = require('./modules/alumno/rutas.js')
+const personal = require('./modules/personal/rutas.js')
+const curso = require('./modules/curso/rutas.js')
+const examen = require('./modules/examen/rutas.js')
+const foro = require('./modules/foro/rutas.js')
+const mensaje = require('./modules/mensaje/rutas.js')
+const material = require('./modules/material/rutas.js')
+const unidades = require('./modules/unidades/rutas.js')
+const login = require('./modules/login/rutas.js')
 const aula = require('./modules/aula/rutas.js')
 const curso_html = require('./modules/curso_html/rutas.js')
 const verificarToken = require('./modules/login/middleware')
-const path = require('path')
+const error = require('./red/errors.js')
 
 const app = express()
-const error =require('./red/errors.js')
 
-//Middleware
+// Asegurar existencia de directorios para subida de archivos
+const uploadsDirs = [
+  path.join(__dirname, '../uploads'),
+  path.join(__dirname, '../uploads/examenes'),
+  path.join(__dirname, '../uploads/perfil'),
+  path.join(__dirname, '../uploads/foro'),
+  path.join(__dirname, 'uploads')
+]
+uploadsDirs.forEach(dir => {
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+    }
+  } catch (e) {
+    console.warn(`Aviso: No se pudo verificar/crear directorio ${dir}:`, e.message)
+  }
+})
+
+// Configuración CORS dinámica para desarrollo y producción
+const defaultOrigins = [
+  'http://localhost:4321',
+  'http://localhost:3000',
+  'http://127.0.0.1:4321',
+  'http://127.0.0.1:3000'
+]
+const envOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim().replace(/\/$/, ''))
+  : []
+const allowedOrigins = [...defaultOrigins, ...envOrigins]
+
 app.use(cors({
-  origin: 'http://localhost:4321'
-}));
-app.use(morgan('dev')) //Nos permite ver facilmente en consola las consultas que se van realizando
+  origin: (origin, callback) => {
+    // Permitir solicitudes sin origin (como apps móviles, Postman o curl)
+    if (!origin) return callback(null, true)
+    // Permitir orígenes configurados o cualquier subdominio de Vercel
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || process.env.NODE_ENV !== 'production') {
+      return callback(null, true)
+    }
+    return callback(null, true) // Permitir para máxima compatibilidad
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-token']
+}))
+
+app.use(morgan('dev'))
 app.use(express.json())
-app.use(express.urlencoded({extended:true}))
+app.use(express.urlencoded({ extended: true }))
 
-//configuracion
-app.set('port',config.app.port) //asignamos un puerto
+// Configuración de servidor
+app.set('port', config.app.port)
+app.set('etag', false)
 
-//rutas
+// Prevenir almacenamiento en caché obsoleto para toda la API
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  res.set('Pragma', 'no-cache')
+  res.set('Expires', '0')
+  next()
+})
+
+// Archivos estáticos de uploads
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')))
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
-app.use(verificarToken);
+// Health check para Render y monitores de servicio
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    servicio: 'API Escuela Técnica EFP N° 31',
+    fecha: new Date().toISOString()
+  })
+})
 
-app.use('/api/alumno',alumno)
-app.use('/api/personal',personal)
-app.use('/api/curso',curso)
-app.use('/api/examen',examen)
-app.use('/api/foro',foro)
-app.use('/api/material',material)
-app.use('/api/mensaje',mensaje)
-app.use('/api/unidades',unidades)
-app.use('/api/login',login)
-app.use('/api/material',material)
-app.use('/api/curso_html',curso_html)
-app.use('/api/aula',aula)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' })
+})
+
+// Middleware de autenticación para endpoints protegidos
+app.use(verificarToken)
+
+// Rutas de la API
+app.use('/api/alumno', alumno)
+app.use('/api/personal', personal)
+app.use('/api/curso', curso)
+app.use('/api/examen', examen)
+app.use('/api/foro', foro)
+app.use('/api/material', material)
+app.use('/api/mensaje', mensaje)
+app.use('/api/unidades', unidades)
+app.use('/api/login', login)
+app.use('/api/curso_html', curso_html)
+app.use('/api/aula', aula)
 app.use(error)
-
-
 
 module.exports = app

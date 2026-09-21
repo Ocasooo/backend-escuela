@@ -1,42 +1,55 @@
-const mysql = require('mysql')
+const mysql = require('mysql2')
 const config = require('../config.js')
 
-const dbConfig = {
-    host : config.mysql.host,
-    user : config.mysql.user,
-    password : config.mysql.password,
-    database : config.mysql.database
+let pool
+
+if (config.mysql.url) {
+    pool = mysql.createPool(config.mysql.url)
+} else {
+    const dbConfig = {
+        host: config.mysql.host,
+        port: config.mysql.port,
+        user: config.mysql.user,
+        password: config.mysql.password,
+        database: config.mysql.database,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0
+    }
+    if (config.mysql.ssl) {
+        dbConfig.ssl = config.mysql.ssl
+    }
+    pool = mysql.createPool(dbConfig)
 }
 
-let conexion;
+// Verificar la conexión inicial de forma amigable
+pool.getConnection((err, conn) => {
+    if (err) {
+        console.error('\n❌ [Error MySQL]: No se pudo conectar a la base de datos.')
+        console.error(`👉 Host: ${config.mysql.host}:${config.mysql.port} | Base de datos: ${config.mysql.database}`)
+        if (err.code === 'ER_ACCESS_DENIED_ERROR') {
+            console.error('👉 Causa: Acceso denegado (usuario o contraseña incorrectos).')
+            console.error('👉 Solución: Configura las variables MYSQL_USER y MYSQL_PASSWORD correctas en tus variables de entorno.')
+        } else if (err.code === 'ECONNREFUSED') {
+            console.error('👉 Causa: El servicio MySQL no está iniciado o no escucha en el host/puerto configurado.')
+        } else if (err.code === 'ER_BAD_DB_ERROR') {
+            console.error(`👉 Causa: La base de datos '${config.mysql.database}' no existe.`)
+            console.error(`👉 Solución: Crea la base de datos '${config.mysql.database}' o ejecuta el script de inicialización.`)
+        } else {
+            console.error('👉 Detalle del error:', err.message)
+        }
+        console.error('--------------------------------------------------\n')
+    } else {
+        console.log(`✅ Base de datos MySQL conectada exitosamente (${config.mysql.host}:${config.mysql.port}/${config.mysql.database})`)
+        conn.release()
+    }
+})
 
-function conMysql(){
-    conexion = mysql.createConnection(dbConfig)
-    conexion.connect((err) =>{
-        if(err){
-            console.log('db error:',err)
-            setTimeout(conMysql,200)
-        }
-        else{
-            console.log('base de datos conectada')
-        }
-    })
-    conexion.on('error',err =>{
-        console.log('db error:',err)
-        if(err.code === 'PROTOCOL_CONNECTION_LOST'){
-            conMysql()
-        }
-        else{
-            throw err
-        }
-    })
-}
-
-conMysql()
+const conexion = pool
 
 function todos(tabla){//function para traer todos los datos de la tabla
     return new Promise((resolve,reject) =>{
-        conexion.query(`SELECT * FROM ${tabla}`, (error,result) =>{
+        conexion.query(`SELECT * FROM ??`, [tabla], (error,result) =>{
             return error ? reject(error) : resolve(result)
         })
     })
@@ -44,24 +57,15 @@ function todos(tabla){//function para traer todos los datos de la tabla
 
 function uno(tabla,id){//function para traer un dato de la tabla
     return new Promise((resolve,reject) =>{
-        conexion.query(`SELECT * FROM ${tabla} WHERE id=${id}`, (error,result) =>{
+        conexion.query(`SELECT * FROM ?? WHERE id = ?`, [tabla, id], (error,result) =>{
             return error ? reject(error) : resolve(result)
         })
     })
 }
 
-// function agregar(tabla,data){//function para eliminar un dato de la tabla
-//     return new Promise((resolve,reject) =>{
-//         conexion.query(`INSERT INTO ${tabla} SET ? ON DUPLICATE KEY UPDATE ?`,[data,data], (error,result) =>{
-//             return error ? reject(error) : resolve(result)
-//         })
-//     })
-// }
-
 function agregar(tabla, data){
-  // INSERT normal, sin ON DUPLICATE KEY UPDATE para evitar actualización automática
   return new Promise((resolve, reject) =>{
-    conexion.query(`INSERT INTO ${tabla} SET ?`, data, (error, result) =>{
+    conexion.query(`INSERT INTO ?? SET ?`, [tabla, data], (error, result) =>{
       return error ? reject(error) : resolve(result);
     });
   });
@@ -69,7 +73,7 @@ function agregar(tabla, data){
 
 function editar(tabla, id, data){
   return new Promise((resolve, reject) =>{
-    conexion.query(`UPDATE ${tabla} SET ? WHERE id = ?`, [data, id], (error, result) =>{
+    conexion.query(`UPDATE ?? SET ? WHERE id = ?`, [tabla, data, id], (error, result) =>{
       return error ? reject(error) : resolve(result);
     });
   });
@@ -77,7 +81,7 @@ function editar(tabla, id, data){
 
 function eliminar(tabla,data){//function para eliminar un dato de la tabla
     return new Promise((resolve,reject) =>{
-        conexion.query(`DELETE FROM ${tabla} WHERE id = ?`,data.id, (error,result) =>{
+        conexion.query(`DELETE FROM ?? WHERE id = ?`, [tabla, data.id], (error,result) =>{
             return error ? reject(error) : resolve(result)
         })
     })
@@ -85,7 +89,7 @@ function eliminar(tabla,data){//function para eliminar un dato de la tabla
 
 function query(tabla,consulta){
     return new Promise((resolve,reject) =>{
-        conexion.query(`SELECT * FROM ${tabla} WHERE ?`,consulta, (error,result) =>{
+        conexion.query(`SELECT * FROM ?? WHERE ?`, [tabla, consulta], (error,result) =>{
             return error ? reject(error) : resolve(result[0])
         })
     })

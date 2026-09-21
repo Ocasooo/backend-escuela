@@ -3,16 +3,31 @@
 const express = require('express')
 const respuesta = require('../../red/respuestas.js')
 const controlador = require('./index.js')
+const { requiereRol } = require('../../middleware/roles.js')
 
 const router = express.Router()
 
 // Rutas
 router.get('/', todos)
-router.get('/:id', uno)
+router.get('/curso/:curso_id', obtenerPorCurso)
 router.get('/info/completa', examenConInfo)
-router.post('/', agregar)
-router.put('/:id', editar)
-router.put('/', eliminar)
+router.get('/:id', uno)
+router.post('/', requiereRol('profesor'), agregar)
+router.put('/:id', requiereRol('profesor'), editar)
+router.put('/', requiereRol('profesor'), eliminar)
+
+async function obtenerPorCurso(req, res, next) {
+  try {
+    const { curso_id } = req.params
+    if (!curso_id) {
+      return respuesta.error(req, res, 'Falta curso_id', 400)
+    }
+    const datos = await controlador.obtenerPorCurso(curso_id)
+    respuesta.success(req, res, datos, 200)
+  } catch (err) {
+    next(err)
+  }
+}
 
 // Handlers
 async function todos(req, res, next) {

@@ -37,7 +37,8 @@ async function uno (req,res,next){
 async function agregar (req,res,next){
     try{
         const items = await controlador.agregar(req.body)
-        if(req.body.id == 0){
+        let mensaje = ''
+        if(!req.body.id || req.body.id == 0){
             mensaje = 'item guardado con exito'
         }else{
             mensaje = 'item actualizado con exito'
@@ -50,7 +51,7 @@ async function agregar (req,res,next){
 
 }
 
-async function eliminar (req,re,next){
+async function eliminar (req,res,next){
     try{
         const items = await controlador.eliminar(req.body)
             respuesta.success(req,res,'items eliminado',200)

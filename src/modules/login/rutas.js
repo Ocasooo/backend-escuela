@@ -20,21 +20,4 @@ async function login(req, res, next) {
   }
 }
 
-router.get('/token-dev', (req, res) => {
-  const jwt = require('jsonwebtoken')
-  const SECRET = process.env.JWT_SECRET || 'claveSuperSecreta'
-
-  const payload = {
-    id: 13,
-    correo: 'franco-makula@outlook.com.ar',
-    nombre: 'Franco',
-    apellido: 'Makula',
-    ocupacion: 'Administrador'
-  }
-
-  const token = jwt.sign(payload, SECRET, { expiresIn: '100y' }) // token eterno para dev
-  res.json({ token })
-})
-
-
 module.exports = router;

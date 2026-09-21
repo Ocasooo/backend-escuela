@@ -1,22 +1,53 @@
 const express = require('express')
 const respuesta = require('../../red/respuestas')
 const controlador = require('./index')
+const { requiereRol } = require('../../middleware/roles')
 
 const router = express.Router()
 
-
 router.get('/', obtenerAulas)
-router.post('/', agregarAula)
-router.post('/horarios', agregarHorario)
-router.post('/asignar-curso-aula-horario', asignarCursoAulaHorario)
+router.post('/', requiereRol('administrador'), agregarAula)
+router.delete('/:id', requiereRol('administrador'), eliminarAula)
+router.put('/eliminar-aula', requiereRol('administrador'), eliminarAulaBody)
+router.post('/horarios', requiereRol('administrador'), agregarHorario)
+router.post('/asignar-curso-aula-horario', requiereRol('administrador'), asignarCursoAulaHorario)
 router.get('/info-completa', obtenerInfoCompleta)
-router.put('/eliminar-curso-asignacion', eliminarCursoAsignacion)
-
+router.put('/eliminar-curso-asignacion', requiereRol('administrador'), eliminarCursoAsignacion)
+router.delete('/desasignar-turno/:horarioId', requiereRol('administrador'), desasignarTurno)
 
 async function eliminarCursoAsignacion (req, res, next){
   try {
-    const { id } = req.body
-    const resultado = await controlador.eliminarCursoAsignacion(id)
+    const resultado = await controlador.eliminarCursoAsignacion(req.body)
+    respuesta.success(req, res, resultado, 200)
+  } catch (error) {
+    next(error)
+  }
+}
+
+async function desasignarTurno(req, res, next) {
+  try {
+    const { horarioId } = req.params
+    const resultado = await controlador.eliminarCursoAsignacion({ horario_id: horarioId })
+    respuesta.success(req, res, resultado, 200)
+  } catch (error) {
+    next(error)
+  }
+}
+
+async function eliminarAula(req, res, next) {
+  try {
+    const { id } = req.params
+    const resultado = await controlador.eliminarAula(id)
+    respuesta.success(req, res, resultado, 200)
+  } catch (error) {
+    next(error)
+  }
+}
+
+async function eliminarAulaBody(req, res, next) {
+  try {
+    const id = req.body.id || req.body.idAula || req.body.aula_id
+    const resultado = await controlador.eliminarAula(id)
     respuesta.success(req, res, resultado, 200)
   } catch (error) {
     next(error)

@@ -1,19 +1,22 @@
 const express = require('express')
 const respuesta = require('../../red/respuestas.js')
 const { crud, relaciones } = require('./index.js')
+const { requiereRol } = require('../../middleware/roles.js')
 
 const router = express.Router()
 
 // === RUTAS DE RELACIONES ALUMNO ===
-router.post('/egresar-alumno',egresarAlumno)
+router.post('/egresar-alumno', requiereRol('administrador'), egresarAlumno)
 router.get('/alumnos-cursos', traerAlumnosConCursos)
-router.post('/asignar-alumno', asignarAlumno)
-router.delete('/quitar-alumno', quitarAlumno)
+router.post('/asignar-alumno', requiereRol('administrador'), asignarAlumno)
+router.delete('/quitar-alumno', requiereRol('administrador'), quitarAlumno)
 router.post('/alumnos-por-curso', alumnoDetallePorCurso)
-router.patch('/quitar-egresado', quitarEgresado)
+router.patch('/quitar-egresado', requiereRol('administrador'), quitarEgresado)
 router.get('/alumno/:id/cursos', cursosPorAlumno)
-router.get('/:id/notasDelCurso',obtenerNotasPorCurso)
-router.patch('/cargarNotaCursado',cargarNotaCursada)
+router.get('/alumno/:id/cursos-aprobados', cursosAprobadosPorAlumno)
+router.get('/alumno/:id/cursos-desaprobados', cursosDesaprobadosPorAlumno)
+router.get('/:id/notasDelCurso', obtenerNotasPorCurso)
+router.patch('/cargarNotaCursado', requiereRol('profesor', 'administrador'), cargarNotaCursada)
 router.get('/:id/alumnos', alumnosPorCursoConEstado)
 router.get('/resumen', resumenCursosTabla)
 router.get('/:id/alumnos-simples', alumnosPorCurso)
@@ -21,8 +24,8 @@ router.get('/:id/alumnos-simples', alumnosPorCurso)
 
 // === RUTAS DE RELACIONES PERSONAL ===
 router.get('/profesores-con-cursos', obtenerProfesoresConCursos)
-router.post('/asignar-personal', asignarPersonal)
-router.delete('/quitar-personal', quitarPersonal)
+router.post('/asignar-personal', requiereRol('administrador'), asignarPersonal)
+router.delete('/quitar-personal', requiereRol('administrador'), quitarPersonal)
 router.get('/personal/:id/cursos', cursosPorPersonal)
 router.get('/alumnos-con-curso', alumnosConCurso)
 router.get('/:id/profesores', profesoresPorCurso)
@@ -30,9 +33,9 @@ router.get('/:id/profesores', profesoresPorCurso)
 // === RUTAS DE CRUD ===
 router.get('/', todos)
 router.get('/:id', uno)
-router.post('/', agregar)
-router.put('/:id', editar)
-router.put('/', eliminar)
+router.post('/', requiereRol('administrador'), agregar)
+router.put('/:id', requiereRol('administrador'), editar)
+router.put('/', requiereRol('administrador'), eliminar)
 
 // === NUEVO: Detalle con validación de usuario ===
 router.get('/:id/detalle-con-usuario', detalleConUsuario)
@@ -165,8 +168,8 @@ async function eliminar(req, res, next) {
 // === FUNCIONES DE RELACIONES ===
 async function asignarAlumno(req, res, next) {
   try {
-    const { id_alumno, id_curso } = req.body
-    await relaciones.asignarAlumno(id_alumno, id_curso)
+    const { id_alumno, id_curso, anio } = req.body
+    await relaciones.asignarAlumno(id_alumno, id_curso, anio)
     respuesta.success(req, res, 'Alumno asignado', 201)
   } catch (err) {
     next(err)
@@ -192,6 +195,24 @@ async function quitarAlumno(req, res, next) {
 async function cursosPorAlumno(req, res, next) {
   try {
     const result = await relaciones.cursosPorAlumno(req.params.id)
+    respuesta.success(req, res, result, 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
+async function cursosAprobadosPorAlumno(req, res, next) {
+  try {
+    const result = await relaciones.cursosAprobadosPorAlumno(req.params.id)
+    respuesta.success(req, res, result, 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
+async function cursosDesaprobadosPorAlumno(req, res, next) {
+  try {
+    const result = await relaciones.cursosDesaprobadosPorAlumno(req.params.id)
     respuesta.success(req, res, result, 200)
   } catch (err) {
     next(err)
@@ -349,14 +370,40 @@ async function obtenerNotasPorCurso(req, res, next){
 
 async function cargarNotaCursada(req, res, next){
   try {
-    const { nota, cursoId, alumnoId } = req.body
+    const { nota, calificacion, cursoId, id_curso, alumnoId, id_alumno, notas } = req.body
 
-    if (!nota || !cursoId || !alumnoId) {
-      respuesta.error(req, res, 'Faltan datos: nota, cursoId o alumnoId', 400)
+    // Si viene un arreglo de notas (batch)
+    if (Array.isArray(notas)) {
+      const cId = cursoId || id_curso
+      if (!cId && notas.length > 0 && !notas[0].cursoId && !notas[0].id_curso) {
+        respuesta.error(req, res, 'Falta el id del curso', 400)
+        return
+      }
+
+      for (const item of notas) {
+        const itemNota = (item.nota !== undefined && item.nota !== null) ? item.nota : item.calificacion
+        const itemCurso = item.cursoId || item.id_curso || cId
+        const itemAlumno = item.alumnoId || item.id_alumno
+        if (itemNota !== undefined && itemCurso && itemAlumno) {
+          await relaciones.cargarNota(Number(itemNota), itemCurso, itemAlumno)
+        }
+      }
+
+      respuesta.success(req, res, 'Notas actualizadas correctamente', 200)
       return
     }
 
-    await relaciones.cargarNota(nota, cursoId, alumnoId)
+    // Actualización individual
+    const calif = (nota !== undefined && nota !== null) ? nota : calificacion
+    const cId = cursoId || id_curso
+    const aId = alumnoId || id_alumno
+
+    if (calif === undefined || calif === null || !cId || !aId) {
+      respuesta.error(req, res, 'Faltan datos: nota/calificacion, cursoId/id_curso o alumnoId/id_alumno', 400)
+      return
+    }
+
+    await relaciones.cargarNota(Number(calif), cId, aId)
     respuesta.success(req, res, 'Nota actualizada correctamente', 200)
   } catch (err) {
     next(err)

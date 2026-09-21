@@ -1,23 +1,24 @@
 const express = require('express')
 const respuesta = require('../../red/respuestas.js')
 const controlador = require('./index.js')
+const upload = require('../../middleware/upload.js')
+const { requiereRol } = require('../../middleware/roles.js')
+
 const router = express.Router()
-const multer = require('multer')
-const upload = multer({ storage: multer.memoryStorage() })
 
 // Rutas urls
 router.post('/subir-imagen', upload.single('imagen'), subirImagen)
 router.patch('/editarDatosPersonales', express.json(), editarDatosPersonales)
-router.patch('/editar', express.json(), editar)
-router.get('/', todos)
+router.patch('/editar', requiereRol('administrador'), express.json(), editar)
+router.get('/', requiereRol('administrador'), todos)
 router.patch('/cambiar-contrasena', cambiarContrasena)
-router.post('/', agregar)
-router.put('/', eliminar)
+router.post('/', requiereRol('administrador'), agregar)
+router.put('/', requiereRol('administrador'), eliminar)
 router.get('/:id', uno)
 
 // Funcionalidad
 
-router.patch('/reemplazar-contrasena', async (req, res, next) => {
+router.patch('/reemplazar-contrasena', requiereRol('administrador'), async (req, res, next) => {
     try {
         const { id, nuevaContrasena } = req.body
 
@@ -58,7 +59,7 @@ async function uno(req, res, next) {
 async function agregar(req, res, next) {
   try {
     const resultado = await controlador.agregar(req.body)
-    respuesta.success(req, res, 'Item guardado con éxito', 201)
+    respuesta.success(req, res, { id: resultado.insertId, mensaje: 'Item guardado con éxito' }, 201)
   } catch (err) {
     console.error(err)
     const mensaje = err.sqlMessage || err.message || 'Error interno'

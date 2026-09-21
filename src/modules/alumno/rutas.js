@@ -1,20 +1,20 @@
 const express = require('express')
-const respuesta = require('../../red/respuestas.js')//importamos las repuestas
+const respuesta = require('../../red/respuestas.js')
 const controlador = require('./index.js')
-const multer = require('multer')
-const upload = multer({ storage: multer.memoryStorage() })
+const upload = require('../../middleware/upload.js')
+const { requiereRol } = require('../../middleware/roles.js')
 
 const router = express.Router()
 
-//Rutas urls
-router.get('/', todos);
+// Rutas urls
+router.get('/', requiereRol('administrador', 'profesor'), todos);
 router.post('/subir-imagen', upload.single('imagen'), subirImagen)
-router.put('/', eliminar);
-router.post('/', agregar);
+router.put('/', requiereRol('administrador'), eliminar);
+router.post('/', requiereRol('administrador'), agregar);
 router.get('/:id', uno);
-router.put('/:id', editar);
+router.put('/:id', requiereRol('administrador'), editar);
 
-//funcionalidad
+// Funcionalidad
 
 router.patch('/cambiar-contrasena', async (req, res, next) => {
   try {
@@ -31,7 +31,7 @@ router.patch('/cambiar-contrasena', async (req, res, next) => {
   }
 })
 
-router.patch('/reemplazar-contrasena', async (req, res, next) => {
+router.patch('/reemplazar-contrasena', requiereRol('administrador'), async (req, res, next) => {
     try {
         const { id, nuevaContrasena } = req.body
 
@@ -116,7 +116,7 @@ async function uno (req,res,next){
 async function agregar(req, res, next) {
   try {
     const resultado = await controlador.agregar(req.body);
-    respuesta.success(req, res, 'Item guardado con éxito', 201);
+    respuesta.success(req, res, { id: resultado.insertId, mensaje: 'Item guardado con éxito' }, 201);
   } catch (err) {
     next(err);
   }

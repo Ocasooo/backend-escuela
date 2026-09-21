@@ -17,7 +17,11 @@ module.exports= function (dbinyectada){
     }
 
     function agregar(body){
-        return db.agregar(tabla,body)
+        if (body.id && Number(body.id) > 0) {
+            const { id, ...data } = body;
+            return db.editar(tabla, id, data);
+        }
+        return db.agregar(tabla, body);
     }
 
     function eliminar(body){

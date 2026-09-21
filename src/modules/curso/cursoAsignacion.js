@@ -5,19 +5,23 @@ module.exports = function (dbinyectada) {
     db = require('../../DB/mysql.js')
   }
 
-function asignarAlumno(idAlumno, idCurso) {
-  const anioActual = new Date().getFullYear()
-  return db.agregar('curso_has_alumno', { alumno_id: idAlumno, curso_id: idCurso, anio: anioActual })
+function asignarAlumno(idAlumno, idCurso, anio) {
+  const anioActual = anio || new Date().getFullYear()
+  return db.customQuery(`
+    INSERT INTO curso_has_alumno (alumno_id, curso_id, anio, estado_terminacion, estado)
+    VALUES (?, ?, ?, 'cursando', 'cursando')
+    ON DUPLICATE KEY UPDATE estado_terminacion = 'cursando', estado = 'cursando'
+  `, [idAlumno, idCurso, anioActual])
 }
 
-  function quitarAlumno(idAlumno, idCurso, anio) {
-    return db.customQuery(
-      `UPDATE curso_has_alumno
-      SET estado_terminacion = 'abandonado'
-      WHERE alumno_id = ? AND curso_id = ? AND anio = ?`,
-      [idAlumno, idCurso, anio]
-    )
-  }
+function quitarAlumno(idAlumno, idCurso, anio) {
+  return db.customQuery(
+    `UPDATE curso_has_alumno
+    SET estado_terminacion = 'abandonado', estado = 'abandonado'
+    WHERE alumno_id = ? AND curso_id = ? AND anio = ?`,
+    [idAlumno, idCurso, anio]
+  )
+}
 
   function egresarAlumno(idAlumno, nota) {
   return db.customQuery(`
@@ -30,14 +34,72 @@ function asignarAlumno(idAlumno, idCurso) {
 
   function cursosPorAlumno(idAlumno) {
     return db.customQuery(
-      `SELECT c.* FROM curso c
+      `SELECT c.*,
+        ca.estado_terminacion,
+        ca.nota,
+        ca.anio,
+        GROUP_CONCAT(DISTINCT CONCAT(p.nombre, ' ', p.apellido) SEPARATOR ', ') AS profesor
+       FROM curso c
        JOIN curso_has_alumno ca ON c.id = ca.curso_id
-       WHERE ca.alumno_id = ?`,
+       LEFT JOIN curso_has_personal cp ON c.id = cp.curso_id
+       LEFT JOIN personal p ON cp.personal_id = p.id
+       WHERE ca.alumno_id = ? AND ca.estado_terminacion != 'abandonado'
+       GROUP BY c.id, ca.anio, ca.estado_terminacion, ca.nota`,
       [idAlumno]
     )
   }
 
-  function asignarPersonal(idPersonal, idCurso) {
+  function cursosAprobadosPorAlumno(idAlumno) {
+    return db.customQuery(
+      `SELECT c.*,
+        ca.estado_terminacion,
+        ca.nota,
+        ca.anio,
+        a.nombre AS alumno_nombre,
+        a.apellido AS alumno_apellido,
+        a.dni AS alumno_dni,
+        GROUP_CONCAT(DISTINCT CONCAT(p.nombre, ' ', p.apellido) SEPARATOR ', ') AS profesor
+       FROM curso c
+       JOIN curso_has_alumno ca ON c.id = ca.curso_id
+       JOIN alumno a ON ca.alumno_id = a.id
+       LEFT JOIN curso_has_personal cp ON c.id = cp.curso_id
+       LEFT JOIN personal p ON cp.personal_id = p.id
+       WHERE ca.alumno_id = ? AND ca.estado_terminacion = 'egresado'
+       GROUP BY c.id, ca.anio, ca.estado_terminacion, ca.nota, a.id, a.nombre, a.apellido, a.dni`,
+      [idAlumno]
+    )
+  }
+
+  function cursosDesaprobadosPorAlumno(idAlumno) {
+    return db.customQuery(
+      `SELECT c.*,
+        ca.estado_terminacion,
+        ca.nota,
+        ca.anio,
+        a.nombre AS alumno_nombre,
+        a.apellido AS alumno_apellido,
+        a.dni AS alumno_dni,
+        GROUP_CONCAT(DISTINCT CONCAT(p.nombre, ' ', p.apellido) SEPARATOR ', ') AS profesor
+       FROM curso c
+       JOIN curso_has_alumno ca ON c.id = ca.curso_id
+       JOIN alumno a ON ca.alumno_id = a.id
+       LEFT JOIN curso_has_personal cp ON c.id = cp.curso_id
+       LEFT JOIN personal p ON cp.personal_id = p.id
+       WHERE ca.alumno_id = ? AND (ca.estado_terminacion = 'desaprobado' OR (ca.nota IS NOT NULL AND ca.nota < 6 AND ca.estado_terminacion != 'egresado'))
+       GROUP BY c.id, ca.anio, ca.estado_terminacion, ca.nota, a.id, a.nombre, a.apellido, a.dni`,
+      [idAlumno]
+    )
+  }
+
+
+  async function asignarPersonal(idPersonal, idCurso) {
+    const existe = await db.customQuery(
+      'SELECT * FROM curso_has_personal WHERE personal_id = ? AND curso_id = ?',
+      [idPersonal, idCurso]
+    )
+    if (existe && existe.length > 0) {
+      return existe[0]
+    }
     return db.agregar('curso_has_personal', { personal_id: idPersonal, curso_id: idCurso })
   }
 
@@ -50,9 +112,14 @@ function asignarAlumno(idAlumno, idCurso) {
 
   function cursosPorPersonal(idPersonal) {
     return db.customQuery(
-      `SELECT c.* FROM curso c
+      `SELECT c.*,
+        GROUP_CONCAT(DISTINCT CONCAT(p.nombre, ' ', p.apellido) SEPARATOR ', ') AS profesor
+       FROM curso c
        JOIN curso_has_personal cp ON c.id = cp.curso_id
-       WHERE cp.personal_id = ?`,
+       LEFT JOIN curso_has_personal cp_all ON c.id = cp_all.curso_id
+       LEFT JOIN personal p ON cp_all.personal_id = p.id
+       WHERE cp.personal_id = ?
+       GROUP BY c.id`,
       [idPersonal]
     )
   }
@@ -143,20 +210,19 @@ function resumenCursos() {
   }
 
   function profesoresConCursos() {
-  return db.customQuery(`
-    SELECT 
-      p.id AS id_profesor,
-      p.nombre AS nombre_profesor,
-      p.apellido AS apellido_profesor,
-      p.ocupacion,
-      c.id AS id_curso,
-      c.nombre AS nombre_curso
-    FROM curso_has_personal cp
-    JOIN personal p ON cp.personal_id = p.id
-    JOIN curso c ON cp.curso_id = c.id
-    WHERE p.ocupacion = 'profesor'
-  `)
-}
+    return db.customQuery(`
+      SELECT 
+        p.id AS id_profesor,
+        p.nombre AS nombre_profesor,
+        p.apellido AS apellido_profesor,
+        p.ocupacion,
+        c.id AS id_curso,
+        c.nombre AS nombre_curso
+      FROM curso_has_personal cp
+      JOIN personal p ON cp.personal_id = p.id
+      JOIN curso c ON cp.curso_id = c.id
+    `)
+  }
 
 
 
@@ -184,6 +250,7 @@ function resumenCursos() {
       FROM curso_has_alumno ca
       JOIN alumno a ON ca.alumno_id = a.id
       JOIN curso c ON ca.curso_id = c.id
+      ORDER BY ca.anio DESC, a.apellido ASC, a.nombre ASC
     `)
   }
 
@@ -241,6 +308,8 @@ function titularAlumno(idAlumno, idCurso, anio, nota) {
     alumnosDetallePorCurso,
     egresarAlumno,
     quitarEgresado,
-    titularAlumno
+    titularAlumno,
+    cursosAprobadosPorAlumno,
+    cursosDesaprobadosPorAlumno
   }
 }
