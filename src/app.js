@@ -39,31 +39,11 @@ uploadsDirs.forEach(dir => {
   }
 })
 
-// Configuración CORS dinámica para desarrollo y producción
-const defaultOrigins = [
-  'http://localhost:4321',
-  'http://localhost:3000',
-  'http://127.0.0.1:4321',
-  'http://127.0.0.1:3000'
-]
-const envOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(',').map(url => url.trim().replace(/\/$/, ''))
-  : []
-const allowedOrigins = [...defaultOrigins, ...envOrigins]
-
+// Configuración CORS permisiva para desarrollo y producción
 app.use(cors({
-  origin: (origin, callback) => {
-    // Permitir solicitudes sin origin (como apps móviles, Postman o curl)
-    if (!origin) return callback(null, true)
-    // Permitir orígenes configurados o cualquier subdominio de Vercel
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || process.env.NODE_ENV !== 'production') {
-      return callback(null, true)
-    }
-    return callback(null, true) // Permitir para máxima compatibilidad
-  },
+  origin: true, // Refleja dinámicamente cualquier origen del cliente (localhost, Vercel, etc.)
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-token']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
 }))
 
 app.use(morgan('dev'))
