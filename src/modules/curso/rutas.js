@@ -355,13 +355,14 @@ async function alumnosPorCurso(req, res, next) {
 async function obtenerNotasPorCurso(req, res, next){
   try {
     const cursoId = Number(req.params.id)
+    const anio = req.query.anio ? Number(req.query.anio) : null
 
     if (!cursoId || isNaN(cursoId)) {
       respuesta.error(req, res, 'ID de curso inválido', 400)
       return
     }
 
-    const notas = await relaciones.obtenerNotasPorCurso(cursoId)
+    const notas = await relaciones.obtenerNotasPorCurso(cursoId, anio)
     respuesta.success(req, res, notas, 200)
   } catch (err) {
     next(err)
@@ -370,7 +371,7 @@ async function obtenerNotasPorCurso(req, res, next){
 
 async function cargarNotaCursada(req, res, next){
   try {
-    const { nota, calificacion, cursoId, id_curso, alumnoId, id_alumno, notas } = req.body
+    const { nota, calificacion, cursoId, id_curso, alumnoId, id_alumno, anio, notas } = req.body
 
     // Si viene un arreglo de notas (batch)
     if (Array.isArray(notas)) {
@@ -381,11 +382,12 @@ async function cargarNotaCursada(req, res, next){
       }
 
       for (const item of notas) {
-        const itemNota = (item.nota !== undefined && item.nota !== null) ? item.nota : item.calificacion
+        const itemNota = (item.nota !== undefined && item.nota !== null && item.nota !== '') ? item.nota : item.calificacion
         const itemCurso = item.cursoId || item.id_curso || cId
         const itemAlumno = item.alumnoId || item.id_alumno
-        if (itemNota !== undefined && itemCurso && itemAlumno) {
-          await relaciones.cargarNota(Number(itemNota), itemCurso, itemAlumno)
+        const itemAnio = item.anio || anio || null
+        if (itemNota !== undefined && itemNota !== null && itemNota !== '' && itemCurso && itemAlumno) {
+          await relaciones.cargarNota(Number(itemNota), itemCurso, itemAlumno, itemAnio)
         }
       }
 
@@ -397,13 +399,14 @@ async function cargarNotaCursada(req, res, next){
     const calif = (nota !== undefined && nota !== null) ? nota : calificacion
     const cId = cursoId || id_curso
     const aId = alumnoId || id_alumno
+    const aAnio = anio || null
 
     if (calif === undefined || calif === null || !cId || !aId) {
       respuesta.error(req, res, 'Faltan datos: nota/calificacion, cursoId/id_curso o alumnoId/id_alumno', 400)
       return
     }
 
-    await relaciones.cargarNota(Number(calif), cId, aId)
+    await relaciones.cargarNota(Number(calif), cId, aId, aAnio)
     respuesta.success(req, res, 'Nota actualizada correctamente', 200)
   } catch (err) {
     next(err)

@@ -139,8 +139,8 @@ function quitarAlumno(idAlumno, idCurso, anio) {
     `)
   }
 
-  function obtenerNotasPorCurso(cursoId) {
-    return db.customQuery(`
+  function obtenerNotasPorCurso(cursoId, anio) {
+    let sql = `
       SELECT 
         a.id,
         a.dni,
@@ -148,22 +148,37 @@ function quitarAlumno(idAlumno, idCurso, anio) {
         a.apellido,
         cha.nota,
         cha.curso_id,
-        cha.anio
+        cha.anio,
+        cha.estado_terminacion,
+        cha.estado
       FROM curso_has_alumno cha
       JOIN alumno a ON cha.alumno_id = a.id
       WHERE cha.curso_id = ?
-    `, [cursoId])
+    `
+    const params = [cursoId]
+    if (anio) {
+      sql += ` AND cha.anio = ?`
+      params.push(anio)
+    }
+    sql += ` ORDER BY a.apellido ASC, a.nombre ASC`
+    return db.customQuery(sql, params)
   }
 
-function cargarNota(nota, cursoId, alumnoId) {
-  // Definir el estado en base a la nota
-  const estado = nota < 6 ? 'desaprobado' : 'cursando'
+function cargarNota(nota, cursoId, alumnoId, anio) {
+  // Si la nota es >= 6 queda 'aprobado', si es menor queda 'desaprobado'
+  const estado = Number(nota) >= 6 ? 'aprobado' : 'desaprobado'
 
-  return db.customQuery(`
+  let sql = `
     UPDATE curso_has_alumno
-    SET nota = ?, estado_terminacion = ?
+    SET nota = ?, estado_terminacion = ?, estado = ?
     WHERE curso_id = ? AND alumno_id = ?
-  `, [nota, estado, cursoId, alumnoId])
+  `
+  const params = [nota, estado, estado, cursoId, alumnoId]
+  if (anio) {
+    sql += ` AND anio = ?`
+    params.push(anio)
+  }
+  return db.customQuery(sql, params)
 }
 
 
