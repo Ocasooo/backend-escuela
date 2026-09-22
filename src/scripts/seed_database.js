@@ -156,16 +156,16 @@ function seedDatabase(isStandalone = false) {
       await queryPromise(
         conexion,
         `INSERT INTO curso_has_alumno (alumno_id, curso_id, anio, estado_terminacion, estado, nota) VALUES
-         (1, 1, 2024, 'cursando', 'cursando', 8.50),
-         (2, 1, 2024, 'cursando', 'cursando', 9.00),
-         (3, 1, 2024, 'cursando', 'cursando', 6.00),
-         (4, 1, 2024, 'cursando', 'cursando', 10.00),
-         (5, 1, 2024, 'cursando', 'cursando', 5.00),
-         (6, 1, 2024, 'cursando', 'cursando', 7.50),
+         (1, 1, 2024, 'cursando', 'cursando', NULL),
+         (2, 1, 2024, 'cursando', 'cursando', NULL),
+         (3, 1, 2024, 'cursando', 'cursando', NULL),
+         (4, 1, 2024, 'cursando', 'cursando', NULL),
+         (5, 1, 2024, 'cursando', 'cursando', NULL),
+         (6, 1, 2024, 'cursando', 'cursando', NULL),
          -- Matriculas en Programación
-         (1, 2, 2024, 'cursando', 'cursando', 9.00),
-         (2, 2, 2024, 'cursando', 'cursando', 9.50),
-         (4, 2, 2024, 'cursando', 'cursando', 8.00),
+         (1, 2, 2024, 'cursando', 'cursando', NULL),
+         (2, 2, 2024, 'cursando', 'cursando', NULL),
+         (4, 2, 2024, 'cursando', 'cursando', NULL),
          -- Egresados anteriores para titulación
          (1, 3, 2023, 'finalizado', 'egresado', 9.00),
          (2, 3, 2023, 'finalizado', 'egresado', 10.00);`
