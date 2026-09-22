@@ -72,9 +72,25 @@ function seedDatabase(isStandalone = false) {
 
       // 2. Limpiar tablas existentes en orden de claves foráneas
       await queryPromise(conexion, 'SET FOREIGN_KEY_CHECKS = 0;')
+      await queryPromise(conexion, `
+        CREATE TABLE IF NOT EXISTS \`foro_respuesta\` (
+          \`id\` INT AUTO_INCREMENT PRIMARY KEY,
+          \`foro_id\` INT NOT NULL,
+          \`parent_id\` INT NULL,
+          \`alumno_id\` INT NULL,
+          \`personal_id\` INT NULL,
+          \`contenido\` TEXT NOT NULL,
+          \`imagen_url\` VARCHAR(500) NULL,
+          \`enlace_url\` VARCHAR(500) NULL,
+          \`editado\` TINYINT DEFAULT 0,
+          \`fecha_creacion\` DATETIME DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_fr_foro (\`foro_id\`),
+          INDEX idx_fr_parent (\`parent_id\`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `)
       const tablas = [
         'alumno_material', 'curso_has_personal', 'curso_has_alumno',
-        'curso_asignacion', 'aula_horario', 'examen', 'foro',
+        'curso_asignacion', 'aula_horario', 'examen', 'foro_respuesta', 'foro',
         'mensaje', 'material', 'unidades', 'curso_html',
         'horario', 'aula', 'curso', 'alumno', 'personal'
       ]
@@ -570,13 +586,47 @@ function seedDatabase(isStandalone = false) {
          (3, 1, 2, '2024-10-20', 'Evaluación Parcial: APIs y Seguridad en Node.js', 'activo');`
       )
 
-      // 12. Foros
-      console.log('💬 Creando foros de consulta...')
+      // 12. Foros y Temas de Discusión
+      console.log('💬 Creando foros de consulta y respuestas comunitarias...')
       await queryPromise(
         conexion,
-        `INSERT INTO foro (id, curso_id, alumno_id, titulo, contenido) VALUES
-         (1, 1, 1, 'Consulta sobre el ejercicio 4 del TP N° 2', '¿El factor de corrección por temperatura se aplica según tabla 771 de la AEA?'),
-         (2, 2, 2, 'Duda con los middleware de autorización', '¿Es necesario verificar el rol en cada ruta o se puede hacer a nivel de router completo?');`
+        `INSERT INTO foro (id, curso_id, alumno_id, personal_id, titulo, contenido, fecha_creacion) VALUES
+         (1, 1, 1, NULL, 'Consulta sobre el ejercicio 4 del TP N° 2 (Factor de Potencia)', 'Hola profesor y compañeros, tengo una duda con respecto al cálculo de capacitores para corrección del cos φ en el ejercicio 4. ¿Debemos tomar la tabla de la reglamentación AEA 771 o calculamos directamente con la fórmula analítica de potencia reactiva Q = P * (tan φ1 - tan φ2)?', DATE_SUB(NOW(), INTERVAL 4 DAY)),
+         (2, 1, NULL, 2, 'Material complementario: Diagramas de conexión de disyuntores diferenciales', 'Estimados estudiantes, les comparto este hilo para debatir sobre las diferencias normativas entre disyuntores de clase AC y clase A para cargas electrónicas e iluminación LED. ¿Qué ventajas observan en la protección de equipos informáticos?', DATE_SUB(NOW(), INTERVAL 3 DAY)),
+         (3, 1, 2, NULL, 'Duda sobre la puesta a tierra con jabalina copperweld en suelo arenoso', 'Hola a todos, en una instalación con suelo predominantemente arenoso, la resistencia de dispersión me da superior a los 10 Ohms reglamentarios con una jabalina de 1.5 metros. ¿Qué solución recomiendan implementar según la norma?', DATE_SUB(NOW(), INTERVAL 2 DAY)),
+         (4, 2, 2, NULL, 'Duda con los middlewares de autenticación JWT en Express', 'Buenas tardes, estoy estructurando las rutas de la API del proyecto y quería consultar: ¿es mejor verificar el token JWT en cada controlador individualmente o proteger un grupo de rutas montando el middleware a nivel de router?', DATE_SUB(NOW(), INTERVAL 2 DAY)),
+         (5, 2, 1, NULL, 'Estrategias de consulta en MySQL: JOINs vs Subconsultas para conteo', 'Estuve optimizando la consulta que trae el listado de temas y el conteo de respuestas. ¿Hay diferencias apreciables de rendimiento entre hacer un LEFT JOIN con GROUP BY versus una subconsulta correlacionada (SELECT COUNT(*) FROM foro_respuesta WHERE foro_id = f.id)?', DATE_SUB(NOW(), INTERVAL 1 DAY));`
+      )
+
+      await queryPromise(
+        conexion,
+        `INSERT INTO foro_respuesta (id, foro_id, parent_id, alumno_id, personal_id, contenido, fecha_creacion) VALUES
+         -- Respuestas para Tema 1 (Consulta TP 2 - Electricidad)
+         (1, 1, NULL, NULL, 2, 'Hola Juan Manuel. Para ese ejercicio debes aplicar la fórmula analítica primero para obtener la capacidad exacta en microfaradios (µF), y luego seleccionar el valor comercial estandarizado inmediatamente superior.', DATE_SUB(NOW(), INTERVAL 90 HOUR)),
+         (2, 1, 1, 1, NULL, 'Excelente profesor, me daba 45.8 µF, entonces voy a redondear al capacitor comercial de 50 µF. ¡Muchas gracias!', DATE_SUB(NOW(), INTERVAL 88 HOUR)),
+         (3, 1, 2, NULL, 2, 'Exactamente, 50 µF a 400V es el valor comercial indicado para esa potencia activa y reactiva. Buen trabajo.', DATE_SUB(NOW(), INTERVAL 86 HOUR)),
+         (4, 1, NULL, 2, NULL, 'A mí también me dió ese valor. Recuerden verificar también la tensión nominal de aislación de los capacitores según si la red es monofásica o trifásica.', DATE_SUB(NOW(), INTERVAL 80 HOUR)),
+         (5, 1, 4, 3, NULL, 'Buen punto María Belén, en la clase anterior el profe recomendó usar al menos 400V para tener margen contra sobretensiones transitorias.', DATE_SUB(NOW(), INTERVAL 78 HOUR)),
+
+         -- Respuestas para Tema 2 (Disyuntores Diferenciales - Electricidad)
+         (6, 2, NULL, 3, NULL, 'Los de clase A detectan corrientes de fuga alternas y también continuas pulsantes que producen las fuentes conmutadas de las computadoras, evitando disparos intempestivos o bloqueos.', DATE_SUB(NOW(), INTERVAL 70 HOUR)),
+         (7, 2, 6, NULL, 2, 'Así es Carlos. Hoy en día en oficinas y talleres informáticos es una exigencia primordial para evitar averías.', DATE_SUB(NOW(), INTERVAL 68 HOUR)),
+         (8, 2, NULL, 1, NULL, '¿En las instalaciones residenciales estándar ya se están colocando obligatoriamente los tipo A o se sigue permitiendo el tipo AC tradicional?', DATE_SUB(NOW(), INTERVAL 60 HOUR)),
+         (9, 2, 8, NULL, 2, 'Para viviendas residenciales el tipo AC sigue siendo aceptado por la AEA 771, aunque para circuitos dedicados de climatización inverter o informática se sugiere fuertemente tipo A o F.', DATE_SUB(NOW(), INTERVAL 58 HOUR)),
+
+         -- Respuestas para Tema 3 (Puesta a Tierra - Electricidad)
+         (10, 3, NULL, 1, NULL, 'Podés clavar una segunda jabalina en paralelo distanciada el doble de su longitud (unos 3 metros) o usar una jabalina seccionable más larga de 3 metros.', DATE_SUB(NOW(), INTERVAL 40 HOUR)),
+         (11, 3, 10, NULL, 2, 'Correcta la respuesta de Juan Manuel. Además, si el suelo es muy seco, se puede mejorar la conductividad del terreno con sales hidrófilas o gel bentonítico.', DATE_SUB(NOW(), INTERVAL 36 HOUR)),
+
+         -- Respuestas para Tema 4 (Middlewares JWT - Desarrollo Web)
+         (12, 4, NULL, NULL, 4, 'Hola María Belén. Definitivamente es mucho más limpio y seguro montar el middleware a nivel de router con router.use(verificarToken). Así te aseguras de no olvidar ninguna ruta desprotegida por descuido.', DATE_SUB(NOW(), INTERVAL 42 HOUR)),
+         (13, 4, 12, 2, NULL, 'Entendido profesora, ya lo implementé agrupando en un router modular de rutas privadas y quedó muchísimo más ordenado el código.', DATE_SUB(NOW(), INTERVAL 40 HOUR)),
+         (14, 4, NULL, 1, NULL, 'Tengan en cuenta excluir las rutas públicas como /login y el endpoint de salud de la API /health antes de aplicar el middleware.', DATE_SUB(NOW(), INTERVAL 35 HOUR)),
+         (15, 4, 14, 4, NULL, '¡Buenísimo dato Juan! Justo me estaba dando 401 Unauthorized cuando intentaba hacer el POST al login antes de autenticarme jaja.', DATE_SUB(NOW(), INTERVAL 30 HOUR)),
+
+         -- Respuestas para Tema 5 (MySQL Performance - Desarrollo Web)
+         (16, 5, NULL, NULL, 3, 'Excelente consulta Juan Manuel. Si foro_id tiene un índice B-Tree en foro_respuesta, la subconsulta correlacionada en un LIMIT acotado es sumamente rápida porque el motor sólo evalúa las filas de la página actual. En cambio, un JOIN + GROUP BY completo sin filtrar agregaría todas las filas en memoria.', DATE_SUB(NOW(), INTERVAL 20 HOUR)),
+         (17, 5, 16, 1, NULL, 'Clarísimo profesor, revisé con EXPLAIN y efectivamente utiliza el índice idx_fr_foro. ¡Muchas gracias!', DATE_SUB(NOW(), INTERVAL 16 HOUR));`
       )
 
       console.log('\n============================================================')
