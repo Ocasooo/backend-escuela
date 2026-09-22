@@ -1,30 +1,67 @@
 // src/scripts/seed_database.js
 const mysql = require('mysql2')
 const bcrypt = require('bcrypt')
+const fs = require('fs')
+const path = require('path')
 const config = require('../config.js')
 
-async function seedDatabase() {
-  const dbName = config.mysql.database || 'ejemplo'
-  console.log(`\n🌱 [Seed]: Conectando y poblando la base de datos '${dbName}'...`)
+function limpiarCarpetasUploads() {
+  const carpetas = [
+    path.join(__dirname, '../../uploads'),
+    path.join(__dirname, '../../uploads/examenes'),
+    path.join(__dirname, '../../uploads/perfil'),
+    path.join(__dirname, '../../uploads/foro'),
+    path.join(__dirname, '../uploads')
+  ]
 
-  const connConfig = {
-    host: config.mysql.host,
-    port: config.mysql.port,
-    user: config.mysql.user,
-    password: config.mysql.password,
-    database: dbName,
-    multipleStatements: true
-  }
-  if (config.mysql.ssl) {
-    connConfig.ssl = config.mysql.ssl
-  }
-  const conexion = mysql.createConnection(connConfig)
-
-  conexion.connect(async (err) => {
-    if (err) {
-      console.error('❌ Error de conexión:', err.message)
-      process.exit(1)
+  carpetas.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      try { fs.mkdirSync(dir, { recursive: true }) } catch (_) {}
+      return
     }
+    try {
+      const archivos = fs.readdirSync(dir)
+      for (const arch of archivos) {
+        if (arch === '.gitkeep') continue
+        const rutaCompleta = path.join(dir, arch)
+        try {
+          const stat = fs.statSync(rutaCompleta)
+          if (stat.isFile()) {
+            fs.unlinkSync(rutaCompleta)
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+  })
+}
+
+function seedDatabase(isStandalone = false) {
+  return new Promise((resolve, reject) => {
+    const dbName = config.mysql.database || 'ejemplo'
+    console.log(`\n🌱 [Seed]: Conectando y poblando la base de datos '${dbName}'...`)
+
+    // Limpiar archivos temporales subidos por usuarios
+    limpiarCarpetasUploads()
+
+    const connConfig = {
+      host: config.mysql.host,
+      port: config.mysql.port,
+      user: config.mysql.user,
+      password: config.mysql.password,
+      database: dbName,
+      multipleStatements: true
+    }
+    if (config.mysql.ssl) {
+      connConfig.ssl = config.mysql.ssl
+    }
+    const conexion = mysql.createConnection(connConfig)
+
+    conexion.connect(async (err) => {
+      if (err) {
+        console.error('❌ Error de conexión:', err.message)
+        if (isStandalone) process.exit(1)
+        return reject(err)
+      }
 
     try {
       const saltRounds = 5
@@ -560,13 +597,22 @@ async function seedDatabase() {
       console.log('============================================================\n')
 
       conexion.end()
-      process.exit(0)
+      if (isStandalone) {
+        process.exit(0)
+      } else {
+        resolve({ success: true, message: 'Base de datos demo restaurada exitosamente' })
+      }
     } catch (error) {
       console.error('❌ Error al poblar base de datos:', error)
       conexion.end()
-      process.exit(1)
+      if (isStandalone) {
+        process.exit(1)
+      } else {
+        reject(error)
+      }
     }
   })
+})
 }
 
 function queryPromise(con, sql, params = []) {
@@ -578,4 +624,10 @@ function queryPromise(con, sql, params = []) {
   })
 }
 
-seedDatabase()
+module.exports = {
+  seedDatabase
+}
+
+if (require.main === module) {
+  seedDatabase(true)
+}

@@ -16,6 +16,7 @@ const unidades = require('./modules/unidades/rutas.js')
 const login = require('./modules/login/rutas.js')
 const aula = require('./modules/aula/rutas.js')
 const curso_html = require('./modules/curso_html/rutas.js')
+const demo = require('./modules/demo/rutas.js')
 const verificarToken = require('./modules/login/middleware')
 const error = require('./red/errors.js')
 
@@ -94,7 +95,8 @@ const modulos = [
   ['/unidades', unidades],
   ['/login', login],
   ['/curso_html', curso_html],
-  ['/aula', aula]
+  ['/aula', aula],
+  ['/demo', demo]
 ]
 modulos.forEach(([prefix, router]) => {
   app.use(`/api${prefix}`, router)

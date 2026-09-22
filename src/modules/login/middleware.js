@@ -14,6 +14,8 @@ function verificarToken(req, res, next) {
   if (
     url === '/api/login' || url.startsWith('/api/login?') ||
     url === '/login' || url.startsWith('/login?') ||
+    url.startsWith('/api/demo') ||
+    url.startsWith('/demo') ||
     url.startsWith('/api/material/descargar') ||
     url.startsWith('/material/descargar')
   ) {
