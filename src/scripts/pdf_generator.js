@@ -48,7 +48,8 @@ function generarPDF(relativePath, data) {
 
   stream += '/F1 9 Tf\n';
   stream += '0 -14 Td\n';
-  stream += '(Ciclo Lectivo 2024 | Departamento Academico y Formacion Profesional) Tj\n';
+  const anioHeader = data.anio || 2026;
+  stream += '(Ciclo Lectivo ' + anioHeader + ' | Departamento Academico y Formacion Profesional) Tj\n';
 
   // Línea separadora
   stream += '0 -12 Td\n';

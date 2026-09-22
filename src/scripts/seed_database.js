@@ -123,8 +123,12 @@ function seedDatabase(isStandalone = false) {
          (3, 'Lucas', 'Rodríguez', ?, '1997-07-30', 'lrodriguez@escuela.edu.ar', 40987654, '3794334455', 'B° San Jerónimo Mza 4', 'Argentina', 'Secundario completo', 'Soltero', 'Estudiante'),
          (4, 'Sofía', 'Fernández', ?, '2000-12-05', 'sfernandez@escuela.edu.ar', 43123789, '3794445566', 'Calle Junín 890', 'Argentina', 'Universitario', 'Soltera', 'Estudiante'),
          (5, 'Carlos', 'Ruiz', ?, '1996-02-18', 'cruiz@escuela.edu.ar', 39876543, '3794556677', 'Av. 3 de Abril 2341', 'Argentina', 'Secundario completo', 'Casado', 'Empleado'),
-         (6, 'Valeria', 'Díaz', ?, '2001-09-14', 'vdiaz@escuela.edu.ar', 44567890, '3794667788', 'Calle Belgrano 432', 'Argentina', 'Secundario completo', 'Soltera', 'Estudiante');`,
-        [passComun, passComun, passComun, passComun, passComun, passComun]
+         (6, 'Valeria', 'Díaz', ?, '2001-09-14', 'vdiaz@escuela.edu.ar', 44567890, '3794667788', 'Calle Belgrano 432', 'Argentina', 'Secundario completo', 'Soltera', 'Estudiante'),
+         (7, 'Joaquín', 'Albornoz', ?, '1999-11-22', 'jalbornoz@escuela.edu.ar', 45123111, '3794778811', 'Av. Armenia 3040', 'Argentina', 'Secundario completo', 'Soltero', 'Estudiante'),
+         (8, 'Camila', 'Navarro', ?, '2000-06-18', 'cnavarro@escuela.edu.ar', 45876222, '3794889922', 'Calle España 1150', 'Argentina', 'Terciario en curso', 'Soltera', 'Empleada'),
+         (9, 'Ignacio', 'Herrera', ?, '1998-03-05', 'iherrera@escuela.edu.ar', 43981333, '3794990033', 'Av. Cazadores 1820', 'Argentina', 'Universitario', 'Soltero', 'Estudiante'),
+         (10, 'Lucía', 'Romero', ?, '2002-08-14', 'lromero@escuela.edu.ar', 46234444, '3794001144', 'Calle Salta 720', 'Argentina', 'Secundario completo', 'Soltera', 'Estudiante');`,
+        [passComun, passComun, passComun, passComun, passComun, passComun, passComun, passComun, passComun, passComun]
       )
 
       // 5. Crear Cursos
@@ -139,16 +143,23 @@ function seedDatabase(isStandalone = false) {
          (5, 'Tornería y Mecánica Industrial', 'Mecanizado de piezas, uso de torno paralelo, fresadora e instrumentos de medición de precisión.');`
       )
 
-      // 6. Asignar Profesores a Cursos (con Franco Makula como Admin y Docente en el curso 2)
+      // 6. Asignar Profesores a Cursos (con Franco Makula como Admin y Docente en todos los cursos)
       console.log('👨‍🏫 Asignando docentes a cursos...')
       await queryPromise(
         conexion,
         `INSERT INTO curso_has_personal (personal_id, curso_id) VALUES
+         (1, 1), -- Franco Makula (Admin + Docente)
+         (1, 2),
+         (1, 3),
+         (1, 4),
+         (1, 5),
          (2, 1), -- Roberto Gómez en Electricidad
-         (1, 2), -- Franco Makula (Admin + Docente) en Programación
+         (2, 4), -- Roberto Gómez en Refrigeración
+         (2, 5), -- Roberto Gómez en Tornería
          (3, 2), -- Marcos Benítez en Programación
-         (4, 3), -- Laura Méndez en Electrónica
-         (2, 4); -- Roberto Gómez en Refrigeración`
+         (3, 5), -- Marcos Benítez en Tornería
+         (4, 1), -- Laura Méndez en Electricidad
+         (4, 3); -- Laura Méndez en Electrónica`
       )
 
       // 7. Matricular Alumnos a Cursos con Estados y Notas
@@ -156,19 +167,56 @@ function seedDatabase(isStandalone = false) {
       await queryPromise(
         conexion,
         `INSERT INTO curso_has_alumno (alumno_id, curso_id, anio, estado_terminacion, estado, nota) VALUES
-         (1, 1, 2024, 'cursando', 'cursando', NULL),
-         (2, 1, 2024, 'cursando', 'cursando', NULL),
-         (3, 1, 2024, 'cursando', 'cursando', NULL),
-         (4, 1, 2024, 'cursando', 'cursando', NULL),
-         (5, 1, 2024, 'cursando', 'cursando', NULL),
-         (6, 1, 2024, 'cursando', 'cursando', NULL),
-         -- Matriculas en Programación
-         (1, 2, 2024, 'cursando', 'cursando', NULL),
-         (2, 2, 2024, 'cursando', 'cursando', NULL),
-         (4, 2, 2024, 'cursando', 'cursando', NULL),
-         -- Egresados anteriores para titulación
-         (1, 3, 2023, 'finalizado', 'egresado', 9.00),
-         (2, 3, 2023, 'finalizado', 'egresado', 10.00);`
+         -- ==============================================================
+         -- CICLO LECTIVO ACTUAL 2026 (CURSANDO ACTIVO, SIN NOTA CERRADA)
+         -- ==============================================================
+         -- Curso 1: Electricidad Industrial
+         (1, 1, 2026, 'cursando', 'cursando', NULL),
+         (2, 1, 2026, 'cursando', 'cursando', NULL),
+         (3, 1, 2026, 'cursando', 'cursando', NULL),
+         (7, 1, 2026, 'cursando', 'cursando', NULL),
+         (8, 1, 2026, 'cursando', 'cursando', NULL),
+
+         -- Curso 2: Programación Web y Bases de Datos
+         (1, 2, 2026, 'cursando', 'cursando', NULL),
+         (2, 2, 2026, 'cursando', 'cursando', NULL),
+         (4, 2, 2026, 'cursando', 'cursando', NULL),
+         (9, 2, 2026, 'cursando', 'cursando', NULL),
+         (10, 2, 2026, 'cursando', 'cursando', NULL),
+
+         -- Curso 3: Electrónica Digital y Microcontroladores
+         (3, 3, 2026, 'cursando', 'cursando', NULL),
+         (4, 3, 2026, 'cursando', 'cursando', NULL),
+         (5, 3, 2026, 'cursando', 'cursando', NULL),
+         (7, 3, 2026, 'cursando', 'cursando', NULL),
+
+         -- Curso 4: Refrigeración y Climatización
+         (5, 4, 2026, 'cursando', 'cursando', NULL),
+         (6, 4, 2026, 'cursando', 'cursando', NULL),
+         (8, 4, 2026, 'cursando', 'cursando', NULL),
+         (9, 4, 2026, 'cursando', 'cursando', NULL),
+
+         -- Curso 5: Tornería y Mecánica Industrial
+         (2, 5, 2026, 'cursando', 'cursando', NULL),
+         (3, 5, 2026, 'cursando', 'cursando', NULL),
+         (6, 5, 2026, 'cursando', 'cursando', NULL),
+         (10, 5, 2026, 'cursando', 'cursando', NULL),
+
+         -- ==============================================================
+         -- CICLOS ANTERIORES HISTÓRICOS (CON NOTAS ASIGNADAS)
+         -- ==============================================================
+         -- Ciclo 2025
+         (1, 1, 2025, 'aprobado', 'aprobado', 8.50),
+         (4, 1, 2025, 'desaprobado', 'desaprobado', 4.50),
+         (3, 2, 2025, 'aprobado', 'aprobado', 9.00),
+         (5, 2, 2025, 'desaprobado', 'desaprobado', 5.00),
+         (6, 3, 2025, 'aprobado', 'aprobado', 7.50),
+
+         -- Ciclo 2024 (Egresados e históricos)
+         (1, 3, 2024, 'finalizado', 'egresado', 9.00),
+         (2, 3, 2024, 'finalizado', 'egresado', 10.00),
+         (5, 1, 2024, 'aprobado', 'aprobado', 8.00),
+         (6, 1, 2024, 'aprobado', 'aprobado', 7.80);`
       )
 
       // 8. Crear Unidades Temáticas
@@ -176,12 +224,26 @@ function seedDatabase(isStandalone = false) {
       await queryPromise(
         conexion,
         `INSERT INTO unidades (id, curso_id, nombre, descripcion, orden) VALUES
+         -- Curso 1: Electricidad
          (1, 1, 'Unidad 1: Fundamentos de la Corriente Alterna', 'Leyes de Kirchhoff, cálculo de impedancia, potencia activa, reactiva y aparente.', 1),
          (2, 1, 'Unidad 2: Tableros Eléctricos y Protecciones', 'Termomagnéticas, disyuntores diferenciales, puesta a tierra y normas AEA.', 2),
          (3, 1, 'Unidad 3: Motores Eléctricos y Automatización', 'Motores monofásicos y trifásicos, contactores y esquemas de arranque.', 3),
+         -- Curso 2: Programación Web
          (4, 2, 'Unidad 1: Arquitectura Web y TypeScript', 'Fundamentos del desarrollo web moderno, componentes y tipado estricto.', 1),
          (5, 2, 'Unidad 2: Backend con Node.js y Express', 'Diseño de endpoints REST, autenticación JWT y middleware de seguridad.', 2),
-         (6, 2, 'Unidad 3: Bases de Datos Relacionales', 'Modelado relacional, consultas SQL parametrizadas e integridad referencial.', 3);`
+         (6, 2, 'Unidad 3: Bases de Datos Relacionales', 'Modelado relacional, consultas SQL parametrizadas e integridad referencial.', 3),
+         -- Curso 3: Electrónica Digital
+         (7, 3, 'Unidad 1: Lógica Digital y Compuertas', 'Álgebra de Boole, tablas de verdad, simplificación de Karnaugh y compuertas lógicas.', 1),
+         (8, 3, 'Unidad 2: Microcontroladores y Arquitectura Arduino', 'Arquitectura AVR/ARM, puertos de entrada/salida y temporizadores por interrupción.', 2),
+         (9, 3, 'Unidad 3: Sensores, Actuadores y PWM', 'Adquisición de señales analógicas, modulación de ancho de pulso y control de potencia.', 3),
+         -- Curso 4: Refrigeración y Climatización
+         (10, 4, 'Unidad 1: Termodinámica y Ciclo de Compresión', 'Principios termodinámicos, estados del refrigerante, presión de evaporación y condensación.', 1),
+         (11, 4, 'Unidad 2: Circuitos y Automatismos Frigoríficos', 'Termostatos, presostatos, relevos térmicos y contactores en equipos split y comerciales.', 2),
+         (12, 4, 'Unidad 3: Detección de Fugas, Vacío y Carga de Gas', 'Uso de bomba de vacío, vacuómetro digital, manómetros manifold y balanza de carga.', 3),
+         -- Curso 5: Tornería y Mecánica Industrial
+         (13, 5, 'Unidad 1: Metrología y Mediciones de Precisión', 'Uso correcto de calibre pie de rey, micrómetro exterior y reloj comparador.', 1),
+         (14, 5, 'Unidad 2: Torno Paralelo: Cilindrado y Frenteado', 'Cinemática de la máquina, selección de herramientas de corte y velocidades de mecanizado.', 2),
+         (15, 5, 'Unidad 3: Roscado y Fresado de Piezas', 'Tablas de pasos de roscas métricas y Whitworth, fresado frontal y seguridad en taller.', 3);`
       )
 
       // 9. Crear Aulas y Horarios
@@ -202,13 +264,14 @@ function seedDatabase(isStandalone = false) {
          (2, 'Miércoles', '18:30:00', '21:30:00'),
          (3, 'Martes', '14:00:00', '18:00:00'),
          (4, 'Jueves', '14:00:00', '18:00:00'),
-         (5, 'Viernes', '08:00:00', '12:00:00');`
+         (5, 'Viernes', '08:00:00', '12:00:00'),
+         (6, 'Sábados', '08:30:00', '12:30:00');`
       )
 
       await queryPromise(
         conexion,
         `INSERT INTO aula_horario (aula_id, horario_id) VALUES
-         (1, 1), (1, 2), (2, 3), (2, 4), (3, 5);`
+         (1, 1), (1, 2), (2, 3), (2, 4), (3, 5), (4, 4), (1, 3);`
       )
 
       await queryPromise(
@@ -217,7 +280,10 @@ function seedDatabase(isStandalone = false) {
          (1, 1, 1),
          (1, 1, 2),
          (2, 2, 3),
-         (2, 2, 4);`
+         (2, 2, 4),
+         (3, 3, 5),
+         (4, 1, 3),
+         (5, 4, 4);`
       )
 
       // 10. Materiales, Trabajos Prácticos y Generación de Archivos Físicos Reales
@@ -532,13 +598,191 @@ function seedDatabase(isStandalone = false) {
         ]
       });
 
+      // Generar PDFs para Cursos 3, 4 y 5 y resoluciones de alumnos
+      generarPDF('uploads/tp1_electronica.pdf', {
+        title: 'TP N° 1 - Circuitos Combinacionales y Compuertas',
+        course: 'Electrónica Digital y Microcontroladores',
+        unit: 'Unidad 1: Lógica Digital y Compuertas',
+        type: 'Trabajo Práctico Evaluativo - Enunciado',
+        paragraphs: [
+          'Análisis y simplificación de funciones booleanas mediante mapas de Karnaugh.',
+          'Implementación práctica con compuertas lógicas integradas TTL/CMOS.'
+        ],
+        items: [
+          'Construir la tabla de verdad para el circuito selector de 4 canales.',
+          'Obtener la expresión mínima en suma de productos.',
+          'Dibujar el esquema circuital con compuertas NAND y NOR.',
+          'Verificar la respuesta en simulador digital.'
+        ]
+      });
+
+      generarPDF('uploads/tp2_electronica.pdf', {
+        title: 'TP N° 2 - Microcontroladores y Entradas/Salidas',
+        course: 'Electrónica Digital y Microcontroladores',
+        unit: 'Unidad 2: Microcontroladores y Arquitectura Arduino',
+        type: 'Trabajo Práctico Evaluativo - Enunciado',
+        paragraphs: [
+          'Programación en C/C++ de microcontrolador para automatismo industrial.',
+          'Control de temporización y lectura antirebote de pulsadores.'
+        ],
+        items: [
+          'Configurar puertos GPIO como entrada con pull-up interno.',
+          'Generar secuencia luminosa de advertencia con millis().',
+          'Implementar máquina de estados finitos para control de cinta transportadora.'
+        ]
+      });
+
+      generarPDF('uploads/tp1_refrigeracion.pdf', {
+        title: 'TP N° 1 - Medición de Presiones y Sobrecalentamiento',
+        course: 'Refrigeración y Climatización',
+        unit: 'Unidad 1: Termodinámica y Ciclo de Compresión',
+        type: 'Trabajo Práctico Evaluativo - Enunciado',
+        paragraphs: [
+          'Cálculo de sobrecalentamiento útil y subenfriamiento en circuito de refrigeración.',
+          'Diagnóstico del rendimiento térmico de equipo split frío/calor.'
+        ],
+        items: [
+          'Conectar manómetros de baja y alta presión al circuito frigorífico.',
+          'Determinar temperatura de evaporación saturada según tabla P-T del gas R410A.',
+          'Calcular el sobrecalentamiento SH = T_succion - T_evaporacion.',
+          'Evaluar si el valor obtenido se encuentra en el rango admisible (5°C a 8°C).'
+        ]
+      });
+
+      generarPDF('uploads/tp2_refrigeracion.pdf', {
+        title: 'TP N° 2 - Detección de Fugas y Procedimiento de Vacío',
+        course: 'Refrigeración y Climatización',
+        unit: 'Unidad 3: Detección de Fugas, Vacío y Carga de Gas',
+        type: 'Trabajo Práctico Evaluativo - Enunciado',
+        paragraphs: [
+          'Protocolo de deshidratación y evacuación de humedad en cañerías de refrigeración.',
+          'Presurización con nitrógeno seco y ensayo con detector ultrasónico.'
+        ],
+        items: [
+          'Presurizar a 150 PSI con nitrógeno y verificar estanqueidad.',
+          'Evacuar con bomba de vacío de doble etapa hasta alcanzar 500 micrones.',
+          'Realizar prueba de retención de vacío durante 20 minutos.',
+          'Cargar refrigerante en fase líquida utilizando balanza de precisión.'
+        ]
+      });
+
+      generarPDF('uploads/tp1_torneria.pdf', {
+        title: 'TP N° 1 - Metrología y Mediciones de Precisión',
+        course: 'Tornería y Mecánica Industrial',
+        unit: 'Unidad 1: Metrología y Mediciones de Precisión',
+        type: 'Trabajo Práctico Evaluativo - Enunciado',
+        paragraphs: [
+          'Lectura y aplicación de instrumentos de medición directa para piezas torneadas.',
+          'Verificación de tolerancias dimensionales y geométricas según norma ISO.'
+        ],
+        items: [
+          'Medición de diámetros exteriores e interiores con calibre decimal (0.02 mm).',
+          'Medición de precisión con micrómetro de exteriores (0.01 mm).',
+          'Determinación de planitud y paralelismo con reloj comparador.',
+          'Completar la planilla de control de calidad de la muestra.'
+        ]
+      });
+
+      generarPDF('uploads/tp2_torneria.pdf', {
+        title: 'TP N° 2 - Torno Paralelo: Cilindrado y Frenteado',
+        course: 'Tornería y Mecánica Industrial',
+        unit: 'Unidad 2: Torno Paralelo: Cilindrado y Frenteado',
+        type: 'Trabajo Práctico Evaluativo - Enunciado',
+        paragraphs: [
+          'Operaciones de mecanizado por arranque de viruta en material SAE 1020.',
+          'Cálculo de revoluciones por minuto según velocidad de corte de la herramienta.'
+        ],
+        items: [
+          'Centrado de pieza en plato de 3 mordazas autocentrantes.',
+          'Frenteado de caras de referencia y perforado de centro para contrapunto.',
+          'Cilindrado escalonado en 3 pasadas de desbaste y 1 de terminación.',
+          'Verificación de rugosidad superficial y cota final.'
+        ]
+      });
+
+      // Resoluciones adicionales de alumnos en 2026
+      generarPDF('uploads/entrega_tp1_alumno7.pdf', {
+        title: 'Resolución TP N° 1 - Albornoz, Joaquín',
+        course: 'Electricidad Industrial y Domiciliaria',
+        unit: 'Unidad 1: Fundamentos de la Corriente Alterna',
+        type: 'Resolución de Alumno - Calificación: 7.50',
+        paragraphs: ['Alumno: Joaquín Albornoz | Ciclo 2026', 'Calificado por: Ing. Roberto Gómez (Nota: 7.50)'],
+        items: ['Cálculo de ley de Ohm y divisor de tensión completado.', 'Verificación en banco de pruebas experimental.']
+      });
+
+      generarPDF('uploads/entrega_tp1_alumno8.pdf', {
+        title: 'Resolución TP N° 1 - Navarro, Camila',
+        course: 'Electricidad Industrial y Domiciliaria',
+        unit: 'Unidad 1: Fundamentos de la Corriente Alterna',
+        type: 'Resolución de Alumno - Calificación: 9.20',
+        paragraphs: ['Alumna: Camila Navarro | Ciclo 2026', 'Calificado por: Ing. Roberto Gómez (Nota: 9.20)'],
+        items: ['Memoria de cálculo impecable y gráficos osciloscópicos adjuntos.']
+      });
+
+      generarPDF('uploads/entrega_tp1_alumno3_elect.pdf', {
+        title: 'Resolución TP N° 1 - Rodríguez, Lucas (Electrónica)',
+        course: 'Electrónica Digital y Microcontroladores',
+        unit: 'Unidad 1: Lógica Digital y Compuertas',
+        type: 'Resolución de Alumno - Calificación: 8.50',
+        paragraphs: ['Alumno: Lucas Rodríguez | Ciclo 2026', 'Calificado por: Prof. Laura Méndez (Nota: 8.50)'],
+        items: ['Simplificación booleana correcta y tabla de estados completa.']
+      });
+
+      generarPDF('uploads/entrega_tp1_alumno4_elect.pdf', {
+        title: 'Resolución TP N° 1 - Fernández, Sofía (Electrónica)',
+        course: 'Electrónica Digital y Microcontroladores',
+        unit: 'Unidad 1: Lógica Digital y Compuertas',
+        type: 'Resolución de Alumno - Calificación: 9.00',
+        paragraphs: ['Alumna: Sofía Fernández | Ciclo 2026', 'Calificado por: Prof. Laura Méndez (Nota: 9.00)'],
+        items: ['Diagramas lógicos implementados sin fallas de conmutación.']
+      });
+
+      generarPDF('uploads/entrega_tp1_alumno5_refrig.pdf', {
+        title: 'Resolución TP N° 1 - Ruiz, Carlos (Refrigeración)',
+        course: 'Refrigeración y Climatización',
+        unit: 'Unidad 1: Termodinámica y Ciclo de Compresión',
+        type: 'Resolución de Alumno - Calificación: 8.00',
+        paragraphs: ['Alumno: Carlos Ruiz | Ciclo 2026', 'Calificado por: Ing. Roberto Gómez (Nota: 8.00)'],
+        items: ['Mediciones de presión de baja en 120 PSI correctas para R410A.']
+      });
+
+      generarPDF('uploads/entrega_tp1_alumno6_refrig.pdf', {
+        title: 'Resolución TP N° 1 - Díaz, Valeria (Refrigeración)',
+        course: 'Refrigeración y Climatización',
+        unit: 'Unidad 1: Termodinámica y Ciclo de Compresión',
+        type: 'Resolución de Alumno - Calificación: 9.00',
+        paragraphs: ['Alumna: Valeria Díaz | Ciclo 2026', 'Calificado por: Ing. Roberto Gómez (Nota: 9.00)'],
+        items: ['Excelente informe de rendimiento frigorífico y COP calculado.']
+      });
+
+      generarPDF('uploads/entrega_tp1_alumno2_torn.pdf', {
+        title: 'Resolución TP N° 1 - Pérez, María Belén (Tornería)',
+        course: 'Tornería y Mecánica Industrial',
+        unit: 'Unidad 1: Metrología y Mediciones de Precisión',
+        type: 'Resolución de Alumno - Calificación: 8.50',
+        paragraphs: ['Alumna: María Belén Pérez | Ciclo 2026', 'Calificado por: Ing. Roberto Gómez (Nota: 8.50)'],
+        items: ['Control dimensional y rugosidad Ra = 1.6 dentro de tolerancia.']
+      });
+
+      generarPDF('uploads/entrega_tp1_alumno10_torn.pdf', {
+        title: 'Resolución TP N° 1 - Romero, Lucía (Tornería)',
+        course: 'Tornería y Mecánica Industrial',
+        unit: 'Unidad 1: Metrología y Mediciones de Precisión',
+        type: 'Resolución de Alumno - Calificación: 9.30',
+        paragraphs: ['Alumna: Lucía Romero | Ciclo 2026', 'Calificado por: Ing. Roberto Gómez (Nota: 9.30)'],
+        items: ['Mecanizado preciso en torno y memoria descriptiva destacada.']
+      });
+
       console.log('✅ Archivos PDF físicos generados exitosamente en la carpeta uploads/.')
 
       // Insertar materiales en la base de datos
       await queryPromise(
         conexion,
         `INSERT INTO material (id, observacion, carpeta, archivo_scan, fecha_subida, curso_id, unidad_id, estado, calificacion, tipo) VALUES
-         -- Materiales y TPs de unidades (Curso 1)
+         -- ==========================================================
+         -- CONSIGNAS DE MATERIALES Y TPS
+         -- ==========================================================
+         -- Curso 1: Electricidad Industrial
          (1, 'Guía Práctica de Corriente Alterna y Circuitos RLC', 'material-u1-elect', 'uploads/guia_corriente_alterna.pdf', NOW(), 1, 1, 'activo', '----', 'guia'),
          (2, 'TP N° 1 - Ley de Ohm y Circuitos Serie-Paralelo', 'tp1-electricidad', 'uploads/tp1_enunciado.pdf', NOW(), 1, 1, 'activo', '----', 'tp'),
          (3, 'Manual de Tableros Eléctricos y Normas AEA', 'material-u2-elect', 'uploads/manual_tableros_aea.pdf', NOW(), 1, 2, 'activo', '----', 'guia'),
@@ -546,44 +790,108 @@ function seedDatabase(isStandalone = false) {
          (5, 'Esquemas de Conexión de Motores Trifásicos', 'material-u3-elect', 'uploads/guia_motores.pdf', NOW(), 1, 3, 'activo', '----', 'guia'),
          (6, 'TP N° 3 - Arranque Estrella-Triángulo de Motores', 'tp3-electricidad', 'uploads/tp3_enunciado.pdf', NOW(), 1, 3, 'activo', '----', 'tp'),
 
-         -- Materiales y TPs de unidades (Curso 2)
+         -- Curso 2: Programación Web y Bases de Datos
          (7, 'Manual de TypeScript y Configuración de Proyecto', 'material-u1-web', 'uploads/guia_typescript.pdf', NOW(), 2, 4, 'activo', '----', 'guia'),
          (8, 'TP N° 1 - Creación de Servidor Express y Rutas', 'tp1-web', 'uploads/tp1_web.pdf', NOW(), 2, 4, 'activo', '----', 'tp'),
          (9, 'Guía de Arquitectura de Endpoints y Seguridad', 'material-u2-web', 'uploads/guia_seguridad.pdf', NOW(), 2, 5, 'activo', '----', 'guia'),
          (10, 'TP N° 2 - Autenticación con JWT y Roles', 'tp2-web', 'uploads/tp2_web.pdf', NOW(), 2, 5, 'activo', '----', 'tp'),
 
-         -- Entregas reales de alumnos para evaluación
+         -- Curso 3: Electrónica Digital y Microcontroladores
+         (19, 'TP N° 1 - Circuitos Combinacionales y Compuertas', 'tp1-electronica', 'uploads/tp1_electronica.pdf', NOW(), 3, 7, 'activo', '----', 'tp'),
+         (20, 'TP N° 2 - Microcontroladores y Entradas/Salidas', 'tp2-electronica', 'uploads/tp2_electronica.pdf', NOW(), 3, 8, 'activo', '----', 'tp'),
+
+         -- Curso 4: Refrigeración y Climatización
+         (21, 'TP N° 1 - Medición de Presiones y Sobrecalentamiento', 'tp1-refrigeracion', 'uploads/tp1_refrigeracion.pdf', NOW(), 4, 10, 'activo', '----', 'tp'),
+         (22, 'TP N° 2 - Detección de Fugas y Procedimiento de Vacío', 'tp2-refrigeracion', 'uploads/tp2_refrigeracion.pdf', NOW(), 4, 12, 'activo', '----', 'tp'),
+
+         -- Curso 5: Tornería y Mecánica Industrial
+         (23, 'TP N° 1 - Metrología y Mediciones de Precisión', 'tp1-torneria', 'uploads/tp1_torneria.pdf', NOW(), 5, 13, 'activo', '----', 'tp'),
+         (24, 'TP N° 2 - Torno Paralelo: Cilindrado y Frenteado', 'tp2-torneria', 'uploads/tp2_torneria.pdf', NOW(), 5, 14, 'activo', '----', 'tp'),
+
+         -- ==========================================================
+         -- ENTREGAS REALES DE ALUMNOS (CICLO ACTUAL 2026)
+         -- ==========================================================
+         -- Curso 1: Electricidad Industrial
          (11, 'Resolución TP N° 1 - González Juan Manuel', 'tp1-electricidad', 'uploads/entrega_tp1_alumno1.pdf', NOW(), 1, 1, 'calificado', '9.00', 'tp'),
          (12, 'Resolución TP N° 1 - Pérez María Belén', 'tp1-electricidad', 'uploads/entrega_tp1_alumno2.pdf', NOW(), 1, 1, 'calificado', '8.50', 'tp'),
          (13, 'Resolución TP N° 2 - González Juan Manuel', 'tp2-electricidad', 'uploads/entrega_tp2_alumno1.pdf', NOW(), 1, 2, 'enviado', '----', 'tp'),
          (14, 'Resolución TP N° 2 - Pérez María Belén', 'tp2-electricidad', 'uploads/entrega_tp2_alumno2.pdf', NOW(), 1, 2, 'enviado', '----', 'tp'),
          (15, 'Resolución TP N° 2 - Rodríguez Carlos', 'tp2-electricidad', 'uploads/entrega_tp2_alumno3.pdf', NOW(), 1, 2, 'enviado', '----', 'tp'),
+         (25, 'Resolución TP N° 1 - Rodríguez Lucas', 'tp1-electricidad', 'uploads/entrega_tp1_alumno1.pdf', NOW(), 1, 1, 'calificado', '8.00', 'tp'),
+         (26, 'Resolución TP N° 1 - Albornoz Joaquín', 'tp1-electricidad', 'uploads/entrega_tp1_alumno7.pdf', NOW(), 1, 1, 'calificado', '7.50', 'tp'),
+         (27, 'Resolución TP N° 1 - Navarro Camila', 'tp1-electricidad', 'uploads/entrega_tp1_alumno8.pdf', NOW(), 1, 1, 'calificado', '9.20', 'tp'),
+         (28, 'Resolución TP N° 2 - Albornoz Joaquín', 'tp2-electricidad', 'uploads/entrega_tp2_alumno1.pdf', NOW(), 1, 2, 'enviado', '----', 'tp'),
+         (29, 'Resolución TP N° 2 - Navarro Camila', 'tp2-electricidad', 'uploads/entrega_tp2_alumno2.pdf', NOW(), 1, 2, 'enviado', '----', 'tp'),
+
+         -- Curso 2: Programación Web
          (16, 'Resolución TP N° 1 - González Juan Manuel (Web)', 'tp1-web', 'uploads/entrega_tp1_alumno1_web.pdf', NOW(), 2, 4, 'calificado', '9.50', 'tp'),
          (17, 'Resolución TP N° 1 - Pérez María Belén (Web)', 'tp1-web', 'uploads/entrega_tp1_alumno2_web.pdf', NOW(), 2, 4, 'calificado', '9.00', 'tp'),
-         (18, 'Resolución TP N° 2 - González Juan Manuel (Web)', 'tp2-web', 'uploads/entrega_tp2_alumno1_web.pdf', NOW(), 2, 5, 'enviado', '----', 'tp');`
+         (18, 'Resolución TP N° 2 - González Juan Manuel (Web)', 'tp2-web', 'uploads/entrega_tp2_alumno1_web.pdf', NOW(), 2, 5, 'enviado', '----', 'tp'),
+         (30, 'Resolución TP N° 1 - Fernández Sofía (Web)', 'tp1-web', 'uploads/entrega_tp1_alumno2_web.pdf', NOW(), 2, 4, 'calificado', '8.80', 'tp'),
+         (31, 'Resolución TP N° 1 - Herrera Ignacio (Web)', 'tp1-web', 'uploads/entrega_tp1_alumno1_web.pdf', NOW(), 2, 4, 'calificado', '8.00', 'tp'),
+         (32, 'Resolución TP N° 1 - Romero Lucía (Web)', 'tp1-web', 'uploads/entrega_tp1_alumno2_web.pdf', NOW(), 2, 4, 'calificado', '9.50', 'tp'),
+         (33, 'Resolución TP N° 2 - Herrera Ignacio (Web)', 'tp2-web', 'uploads/entrega_tp2_alumno1_web.pdf', NOW(), 2, 5, 'enviado', '----', 'tp'),
+         (34, 'Resolución TP N° 2 - Romero Lucía (Web)', 'tp2-web', 'uploads/entrega_tp2_alumno1_web.pdf', NOW(), 2, 5, 'enviado', '----', 'tp'),
+
+         -- Curso 3: Electrónica Digital
+         (35, 'Resolución TP N° 1 - Rodríguez Lucas (Electrónica)', 'tp1-electronica', 'uploads/entrega_tp1_alumno3_elect.pdf', NOW(), 3, 7, 'calificado', '8.50', 'tp'),
+         (36, 'Resolución TP N° 1 - Fernández Sofía (Electrónica)', 'tp1-electronica', 'uploads/entrega_tp1_alumno4_elect.pdf', NOW(), 3, 7, 'calificado', '9.00', 'tp'),
+         (37, 'Resolución TP N° 1 - Ruiz Carlos (Electrónica)', 'tp1-electronica', 'uploads/entrega_tp1_alumno3_elect.pdf', NOW(), 3, 7, 'calificado', '7.80', 'tp'),
+         (38, 'Resolución TP N° 1 - Albornoz Joaquín (Electrónica)', 'tp1-electronica', 'uploads/entrega_tp1_alumno4_elect.pdf', NOW(), 3, 7, 'calificado', '8.20', 'tp'),
+         (39, 'Resolución TP N° 2 - Rodríguez Lucas (Electrónica)', 'tp2-electronica', 'uploads/tp2_electronica.pdf', NOW(), 3, 8, 'enviado', '----', 'tp'),
+         (40, 'Resolución TP N° 2 - Ruiz Carlos (Electrónica)', 'tp2-electronica', 'uploads/tp2_electronica.pdf', NOW(), 3, 8, 'enviado', '----', 'tp'),
+
+         -- Curso 4: Refrigeración y Climatización
+         (41, 'Resolución TP N° 1 - Ruiz Carlos (Refrigeración)', 'tp1-refrigeracion', 'uploads/entrega_tp1_alumno5_refrig.pdf', NOW(), 4, 10, 'calificado', '8.00', 'tp'),
+         (42, 'Resolución TP N° 1 - Díaz Valeria (Refrigeración)', 'tp1-refrigeracion', 'uploads/entrega_tp1_alumno6_refrig.pdf', NOW(), 4, 10, 'calificado', '9.00', 'tp'),
+         (43, 'Resolución TP N° 1 - Navarro Camila (Refrigeración)', 'tp1-refrigeracion', 'uploads/entrega_tp1_alumno5_refrig.pdf', NOW(), 4, 10, 'calificado', '8.70', 'tp'),
+         (44, 'Resolución TP N° 1 - Herrera Ignacio (Refrigeración)', 'tp1-refrigeracion', 'uploads/entrega_tp1_alumno6_refrig.pdf', NOW(), 4, 10, 'calificado', '7.50', 'tp'),
+         (45, 'Resolución TP N° 2 - Díaz Valeria (Refrigeración)', 'tp2-refrigeracion', 'uploads/tp2_refrigeracion.pdf', NOW(), 4, 12, 'enviado', '----', 'tp'),
+         (46, 'Resolución TP N° 2 - Navarro Camila (Refrigeración)', 'tp2-refrigeracion', 'uploads/tp2_refrigeracion.pdf', NOW(), 4, 12, 'enviado', '----', 'tp'),
+
+         -- Curso 5: Tornería y Mecánica Industrial
+         (47, 'Resolución TP N° 1 - Pérez María Belén (Tornería)', 'tp1-torneria', 'uploads/entrega_tp1_alumno2_torn.pdf', NOW(), 5, 13, 'calificado', '8.50', 'tp'),
+         (48, 'Resolución TP N° 1 - Rodríguez Lucas (Tornería)', 'tp1-torneria', 'uploads/entrega_tp1_alumno10_torn.pdf', NOW(), 5, 13, 'calificado', '9.00', 'tp'),
+         (49, 'Resolución TP N° 1 - Díaz Valeria (Tornería)', 'tp1-torneria', 'uploads/entrega_tp1_alumno2_torn.pdf', NOW(), 5, 13, 'calificado', '8.20', 'tp'),
+         (50, 'Resolución TP N° 1 - Romero Lucía (Tornería)', 'tp1-torneria', 'uploads/entrega_tp1_alumno10_torn.pdf', NOW(), 5, 13, 'calificado', '9.30', 'tp'),
+         (51, 'Resolución TP N° 2 - Pérez María Belén (Tornería)', 'tp2-torneria', 'uploads/tp2_torneria.pdf', NOW(), 5, 14, 'enviado', '----', 'tp'),
+         (52, 'Resolución TP N° 2 - Romero Lucía (Tornería)', 'tp2-torneria', 'uploads/tp2_torneria.pdf', NOW(), 5, 14, 'enviado', '----', 'tp');`
       )
 
       await queryPromise(
         conexion,
         `INSERT INTO alumno_material (alumno_id, material_id) VALUES
-         (1, 11),
-         (2, 12),
-         (1, 13),
-         (2, 14),
-         (3, 15),
-         (1, 16),
-         (2, 17),
-         (1, 18);`
+         -- Curso 1
+         (1, 11), (2, 12), (1, 13), (2, 14), (3, 15),
+         (3, 25), (7, 26), (8, 27), (7, 28), (8, 29),
+         -- Curso 2
+         (1, 16), (2, 17), (1, 18),
+         (4, 30), (9, 31), (10, 32), (9, 33), (10, 34),
+         -- Curso 3
+         (3, 35), (4, 36), (5, 37), (7, 38), (3, 39), (5, 40),
+         -- Curso 4
+         (5, 41), (6, 42), (8, 43), (9, 44), (6, 45), (8, 46),
+         -- Curso 5
+         (2, 47), (3, 48), (6, 49), (10, 50), (2, 51), (10, 52);`
       )
 
-      // 11. Exámenes
+      // 11. Exámenes en línea para Ciclo 2026
       console.log('📝 Creando exámenes en línea...')
       await queryPromise(
         conexion,
         `INSERT INTO examen (id, alumno_id, curso_id, fecha, descripcion, estado) VALUES
-         (1, 1, 1, '2024-10-15', 'Primer Parcial Teórico: Seguridad y Protecciones Eléctricas', 'activo'),
-         (2, 2, 1, '2024-10-15', 'Primer Parcial Teórico: Seguridad y Protecciones Eléctricas', 'activo'),
-         (3, 1, 2, '2024-10-20', 'Evaluación Parcial: APIs y Seguridad en Node.js', 'activo');`
+         (1, 1, 1, '2026-05-15', 'Primer Parcial Teórico: Seguridad y Protecciones Eléctricas', 'activo'),
+         (2, 2, 1, '2026-05-15', 'Primer Parcial Teórico: Seguridad y Protecciones Eléctricas', 'activo'),
+         (3, 3, 1, '2026-05-15', 'Primer Parcial Teórico: Seguridad y Protecciones Eléctricas', 'activo'),
+         (4, 1, 2, '2026-05-20', 'Evaluación Parcial: APIs y Seguridad en Node.js', 'activo'),
+         (5, 2, 2, '2026-05-20', 'Evaluación Parcial: APIs y Seguridad en Node.js', 'activo'),
+         (6, 4, 2, '2026-05-20', 'Evaluación Parcial: APIs y Seguridad en Node.js', 'activo'),
+         (7, 3, 3, '2026-05-18', 'Evaluación Parcial: Lógica y Microcontroladores', 'activo'),
+         (8, 4, 3, '2026-05-18', 'Evaluación Parcial: Lógica y Microcontroladores', 'activo'),
+         (9, 5, 4, '2026-05-22', 'Evaluación Teórico-Práctica: Ciclo de Compresión', 'activo'),
+         (10, 6, 4, '2026-05-22', 'Evaluación Teórico-Práctica: Ciclo de Compresión', 'activo'),
+         (11, 2, 5, '2026-05-25', 'Primer Parcial: Metrología y Torno Paralelo', 'activo'),
+         (12, 10, 5, '2026-05-25', 'Primer Parcial: Metrología y Torno Paralelo', 'activo');`
       )
 
       // 12. Foros y Temas de Discusión
